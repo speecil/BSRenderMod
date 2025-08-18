@@ -32,6 +32,7 @@ From there, you can:
 ## Notes
 
 - This mod renders from replay data and is not limited by real-time performance.
+
   *(The mod will not run unless in fpfc)*
 - Ensure that the replay files being played are not broken or your replay playback mod is broken
 - Audio is **NOT** recorded from the game, and is instead muxed in from the beatmaps ogg/egg file
