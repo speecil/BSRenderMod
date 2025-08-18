@@ -1,5 +1,6 @@
 ﻿using IPA.Utilities;
 using RenderMod.Render;
+using SiraUtil.Affinity;
 using SiraUtil.Logging;
 using System;
 using System.Collections;
@@ -15,7 +16,7 @@ using UnityEngine.Rendering;
 using Zenject;
 using static CustomLevelLoader;
 
-public class ReplayVideoRenderer : IInitializable, IDisposable
+public class ReplayVideoRenderer : IInitializable, IDisposable, IAffinity
 {
     [Inject] private BeatmapLevel _beatmapLevel;
     [Inject] private SiraLog _log;
@@ -51,6 +52,7 @@ public class ReplayVideoRenderer : IInitializable, IDisposable
 
     private int _w, _h, _fps;
     private bool _atscPrevEnabled;
+
 
     public void Initialize()
     {
@@ -144,14 +146,10 @@ public class ReplayVideoRenderer : IInitializable, IDisposable
     private IEnumerator RenderReplayCoroutine()
     {
         _progressUI.Show();
-        _atsc.Pause();
-        yield return null; // wait for ui
-        _atsc.Pause();
-        yield return null; // wait for ui to settle
-        _atsc.Pause();
-        // KILL ME NOW
-        yield return new WaitForSecondsRealtime(1f); // give some time for the UI to settle
-
+        while (!_atsc.isReady || !_atsc.isAudioLoaded)
+        {
+            yield return null;
+        }
         try
         {
             // get the delta time setup
