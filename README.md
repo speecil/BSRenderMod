@@ -31,6 +31,7 @@ From there, you can:
 
 ## Notes
 
+- ****FFMPEG must be installed and added to PATH****
 - This mod renders from replay data and is not limited by real-time performance.
 
   *(The mod will not run unless in fpfc)*
