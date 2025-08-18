@@ -1,0 +1,12 @@
+﻿{
+  "$schema": "https://raw.githubusercontent.com/bsmg/BSIPA-MetadataFileSchema/master/Schema.json",
+  "id": "RenderMod",
+  "name": "RenderMod",
+  "author": "Riley (Speecil)",
+  "version": "0.0.1",
+  "description": "Renders replays to the Renders folder within your game install",
+  "gameVersion": "1.40.0",
+  "dependsOn": {
+    "BSIPA": "^4.2.0"
+  }
+}

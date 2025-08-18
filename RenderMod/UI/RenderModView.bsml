@@ -1,0 +1,47 @@
+<bg xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' xsi:schemaLocation='https://monkeymanboy.github.io/BSML-Docs/ https://monkeymanboy.github.io/BSML-Docs/BSMLSchema.xsd'>
+	<scrollable-settings-container preferred-height='90' child-control-height='true' child-expand-width='true'>
+		<toggle-setting apply-on-change="true" id='render-button' text='Enable Render?' value="renderEnabled" on-change='OnToggleChanged'/>
+		<vertical spacing="2" align="Center" child-control-height="true" child-control-width="true">
+			<!-- Preset Dropdown -->
+			<text text="Select a Preset" font-size="4" font-style="Bold" align="Center" color="#FFFFFF"/>
+			<dropdown-list-setting id='presetDropdown' value='preset-option' options='preset-options' text='Preset' on-change='OnPresetChanged'/>
+			<!-- Width & Height -->
+			<text text="Resolution" font-size="4" font-style="Bold" align="Center" color="#FFFFFF"/>
+			<vertical spacing="2" align="Center">
+				<increment-setting text="Width" id="width" min="640" max="3840" increment="64" integer-only="true" apply-on-change="true" value="width" on-change="OnWidthChanged"/>
+				<increment-setting text="Height" id="height" min="360" max="2160" increment="36" integer-only="true" apply-on-change="true" value="height" on-change="OnHeightChanged"/>
+			</vertical>
+
+			<!-- FPS -->
+			<text text="FPS Settings" font-size="4" font-style="Bold" align="Center" color="#FFFFFF"/>
+			<vertical spacing="2" align="Center">
+				<increment-setting text="Render FPS" id="fps" min="30" max="360" increment="10" integer-only="true" apply-on-change="true" value="fps" on-change="OnFPSChanged"/>
+			</vertical>
+
+			<!-- Camera Settings -->
+			<text text="Camera Settings" font-size="4" font-style="Bold" align="Center" color="#FFFFFF"/>
+			<slider-setting show-buttons='true' increment='0.1' min='60' max='120' text='Camera FOV' on-change='OnReplayCameraFOVChanged' value='replayCameraFOV' apply-on-change='true' />
+				<horizontal spacing='2'>
+					<slider-setting preferred-width='65' size-delta-x='65' show-buttons='true' increment='0.01' min='-10' max='10'  text='X Offset' on-change='OnXValueOffsetChanged' value='currentXValueOffset' bind-value='true' apply-on-change='true' />
+				</horizontal>
+				<horizontal spacing='2'>
+					<slider-setting preferred-width='65' size-delta-x='65' show-buttons='true' increment='0.01' min='-10' max='10'  text='Y Offset' on-change='OnYValueOffsetChanged' value='currentYValueOffset' bind-value='true' apply-on-change='true' />
+				</horizontal>
+				<horizontal spacing='2'>
+					<slider-setting preferred-width='65' size-delta-x='65' show-buttons='true' increment='0.01' min='-10' max='10'  text='Z Offset' on-change='OnZValueOffsetChanged' value='currentZValueOffset' bind-value='true' apply-on-change='true' />
+				</horizontal>
+			<!-- Bitrate -->
+			<text text="Bitrate Settings" font-size="4" font-style="Bold" align="Center" color="#FFFFFF"/>
+				<increment-setting text="Bitrate (kbps)" id="bitrate" min="1000" max="50000" increment="500" integer-only="true" apply-on-change="true" value="bitrate" on-change="OnBitrateChanged"/>
+
+			<!-- Extra FFmpeg Args -->
+			<text text="Extra FFmpeg Args" font-size="4" font-style="Bold" align="Center" color="#FFFFFF"/>
+				<string-setting text="Extra FFmpeg Args" id="extra-args" value="extraFFmpegArgs" apply-on-change="true" on-change="OnExtraArgsChanged"/>
+
+			<!-- Encoder Tester -->
+			<text text="Encoder Tester" font-size="4" font-style="Bold" align="Center" color="#FFFFFF"/>
+				<button text="Run Encoder Test" on-click="OnEncoderTestClicked" />
+				<text id="encoder-test-text" text="RESULT: "/>
+		</vertical>
+	</scrollable-settings-container>
+</bg>
