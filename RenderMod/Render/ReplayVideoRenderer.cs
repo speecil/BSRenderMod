@@ -53,9 +53,13 @@ public class ReplayVideoRenderer : IInitializable, IDisposable, IAffinity
     private int _w, _h, _fps;
     private bool _atscPrevEnabled;
 
-
+    GameObject gcDisabler;
     public void Initialize()
     {
+        gcDisabler = new GameObject("ReplayVideoRenderer");
+        var gcdisable = gcDisabler.AddComponent<DisableGCWhileEnabled>();
+        gcdisable.enabled = true; // disable GC while this component is enabled
+
         _w = ReplayRenderSettings.Width;
         _h = ReplayRenderSettings.Height;
         _fps = Mathf.Max(1, ReplayRenderSettings.FPS);
@@ -143,6 +147,7 @@ public class ReplayVideoRenderer : IInitializable, IDisposable, IAffinity
         _atsc.StartCoroutine(RenderReplayCoroutine());
     }
 
+    float oldCaptureDeltaTime;
     private IEnumerator RenderReplayCoroutine()
     {
         _progressUI.Show();
@@ -152,10 +157,10 @@ public class ReplayVideoRenderer : IInitializable, IDisposable, IAffinity
         }
         try
         {
+            _atsc.StopSong();
             // get the delta time setup
-            Time.timeScale = 1f;
+            oldCaptureDeltaTime = Time.captureDeltaTime;
             Time.captureDeltaTime = 1f / _fps;
-
             _replayCamera.fieldOfView = ReplayRenderSettings.RenderFOV;
             _replayCamera.transform.position += ReplayRenderSettings.RenderOffset;
 
@@ -168,39 +173,36 @@ public class ReplayVideoRenderer : IInitializable, IDisposable, IAffinity
             {
                 SetSongTime(t);
 
-                if (frameIndex % skipFrames == 0)
+                yield return WaitForSlotAsync();
+
+                int bufferIdx = frameIndex % BufferCount;
+
+                int capturedIndex = frameIndex;
+                AsyncGPUReadback.Request(_rt, 0, TextureFormat.RGB24, req =>
                 {
-                    // render the frame once ready
-                    yield return WaitForSlotAsync();
-
-                    int bufferIdx = frameIndex % BufferCount;
-
-                    int capturedIndex = frameIndex;
-                    AsyncGPUReadback.Request(_rt, 0, TextureFormat.RGB24, req =>
+                    if (!req.hasError)
                     {
-                        if (!req.hasError)
-                        {
-                            var data = req.GetData<byte>();
-                            data.CopyTo(_frameBuffers[bufferIdx]);
+                        var data = req.GetData<byte>();
+                        data.CopyTo(_frameBuffers[bufferIdx]);
 
-                            _frameDict[capturedIndex] = _frameBuffers[bufferIdx]; // store by frame index
-                            _queueSignal.Release();
-                        }
-                        else
-                        {
-                            _log.Warn("GPU readback failed for a frame.");
-                        }
+                        _frameDict[capturedIndex] = _frameBuffers[bufferIdx];
+                        _queueSignal.Release();
+                    }
+                    else
+                    {
+                        _log.Warn("GPU readback failed for a frame.");
+                    }
 
-                        Interlocked.Increment(ref _availableSlots);
-                        _availableSlotSignal.Release();
-                    });
+                    Interlocked.Increment(ref _availableSlots);
+                    _availableSlotSignal.Release();
+                });
 
-                    _availableSlots--;
-                }
-
+                _availableSlots--;
                 frameIndex++;
+
                 _progressUI.UpdateProgress(Mathf.Clamp01(t / Mathf.Max(0.0001f, songLen)));
             }
+
 
             // wait for all frames to be processed
             while (!_frameDict.IsEmpty || _availableSlots < BufferCount)
@@ -230,9 +232,8 @@ public class ReplayVideoRenderer : IInitializable, IDisposable, IAffinity
 
             if (_atsc != null) _atsc.enabled = _atscPrevEnabled;
 
-            Time.captureFramerate = 0;
-            Time.timeScale = 1f;
             _progressUI.Hide();
+            Time.captureDeltaTime = oldCaptureDeltaTime;
         }
     }
 
@@ -357,12 +358,10 @@ public class ReplayVideoRenderer : IInitializable, IDisposable, IAffinity
             _rt = null;
         }
 
-        Time.captureFramerate = 0;
-        Time.timeScale = 1f;
-
         // fail safe to mux just in case we exit early
         RemuxAsync(_unfinishedPath, _songPath, _finishedPath, _fps);
         ClearUnfinishedDirectory();
+        GameObject.Destroy(gcDisabler);
     }
 
     private void ClearUnfinishedDirectory()
