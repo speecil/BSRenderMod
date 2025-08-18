@@ -21,6 +21,7 @@ public class ReplayVideoRenderer : IInitializable, IDisposable, IAffinity
     [Inject] private BeatmapLevel _beatmapLevel;
     [Inject] private SiraLog _log;
     [Inject] private ReplayProgressUI _progressUI;
+    [Inject] private IReturnToMenuController _returnToMenuController;
 
     private AudioTimeSyncController _atsc;
     private Camera _replayCamera;
@@ -92,28 +93,6 @@ public class ReplayVideoRenderer : IInitializable, IDisposable, IAffinity
                                  return l.EndsWith(".ogg") || l.EndsWith(".egg");
                              });
 
-        // get the replay camera (bl names theirs, ss doesnt and uses main)
-        _replayCamera = Resources.FindObjectsOfTypeAll<Camera>().Where(c => c.name.ToLower().Contains("replay")).FirstOrDefault();
-        if (_replayCamera == null)
-            _replayCamera = Camera.main;
-        if (_replayCamera == null) { _log.Error("Replay camera not found."); return; }
-
-
-        // make the render texture (this is where the magic happens)
-        _rt = new RenderTexture(_w, _h, 24, RenderTextureFormat.ARGB32)
-        {
-            useMipMap = false,
-            autoGenerateMips = false,
-            wrapMode = TextureWrapMode.Clamp,
-            filterMode = FilterMode.Bilinear
-        };
-        _rt.Create();
-
-        _hadTargetTex = _replayCamera.targetTexture != null;
-        _origTarget = _replayCamera.targetTexture;
-        _replayCamera.targetTexture = _rt;
-        _origProj = _replayCamera.projectionMatrix;
-
         _frameBuffers = new byte[BufferCount][];
         for (int i = 0; i < BufferCount; i++)
             _frameBuffers[i] = new byte[_w * _h * 3];
@@ -155,6 +134,37 @@ public class ReplayVideoRenderer : IInitializable, IDisposable, IAffinity
         {
             yield return null;
         }
+
+        // get the replay camera (bl names theirs, ss doesnt and uses main)
+        _replayCamera = Resources.FindObjectsOfTypeAll<Camera>().Where(c => c.name.ToLower().Contains("replay")).FirstOrDefault();
+        if (_replayCamera == null)
+        {
+            _replayCamera = Resources.FindObjectsOfTypeAll<Camera>().Where(c => c.name.ToLower().Contains("recorder")).FirstOrDefault();
+        }
+        if (_replayCamera == null)
+        {
+            _replayCamera = Camera.main;
+        }
+
+        if (_replayCamera == null)
+        { _log.Error("Replay camera not found."); }
+
+
+        // make the render texture (this is where the magic happens)
+        _rt = new RenderTexture(_w, _h, 24, RenderTextureFormat.ARGB32)
+        {
+            useMipMap = false,
+            autoGenerateMips = false,
+            wrapMode = TextureWrapMode.Clamp,
+            filterMode = FilterMode.Bilinear
+        };
+        _rt.Create();
+
+        _hadTargetTex = _replayCamera.targetTexture != null;
+        _origTarget = _replayCamera.targetTexture;
+        _replayCamera.targetTexture = _rt;
+        _origProj = _replayCamera.projectionMatrix;
+
         try
         {
             _atsc.StopSong();
@@ -234,6 +244,7 @@ public class ReplayVideoRenderer : IInitializable, IDisposable, IAffinity
 
             _progressUI.Hide();
             Time.captureDeltaTime = oldCaptureDeltaTime;
+            _returnToMenuController.ReturnToMenu();
         }
     }
 
