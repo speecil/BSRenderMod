@@ -11,7 +11,7 @@ namespace RenderMod.Render
 
     public static class ReplayRenderSettings
     {
-        public static bool RenderEnabled = true;
+        public static bool RenderEnabled = false;
 
         // general
         public static int Width = 1920;
