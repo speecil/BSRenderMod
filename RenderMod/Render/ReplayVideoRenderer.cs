@@ -16,7 +16,7 @@ using UnityEngine.Rendering;
 using Zenject;
 using static CustomLevelLoader;
 
-public class ReplayVideoRenderer : IInitializable, IDisposable, IAffinity
+public class ReplayVideoRenderer : IDisposable, IAffinity
 {
     [Inject] private BeatmapLevel _beatmapLevel;
     [Inject] private SiraLog _log;
@@ -55,7 +55,10 @@ public class ReplayVideoRenderer : IInitializable, IDisposable, IAffinity
     private bool _atscPrevEnabled;
 
     GameObject gcDisabler;
-    public void Initialize()
+
+    [AffinityPatch(typeof(AudioTimeSyncController), nameof(AudioTimeSyncController.StartSong))]
+    [AffinityPostfix]
+    public void a()
     {
         gcDisabler = new GameObject("ReplayVideoRenderer");
         var gcdisable = gcDisabler.AddComponent<DisableGCWhileEnabled>();
@@ -127,6 +130,9 @@ public class ReplayVideoRenderer : IInitializable, IDisposable, IAffinity
     }
 
     float oldCaptureDeltaTime;
+
+    private Vector3 _lastCameraPos;
+    private Quaternion _lastCameraRot;
     private IEnumerator RenderReplayCoroutine()
     {
         _progressUI.Show();
@@ -134,21 +140,18 @@ public class ReplayVideoRenderer : IInitializable, IDisposable, IAffinity
         {
             yield return null;
         }
-
+        yield return null; // wait one frame to ensure everything is ready
         // get the replay camera (bl names theirs, ss doesnt and uses main)
         _replayCamera = Resources.FindObjectsOfTypeAll<Camera>().Where(c => c.name.ToLower().Contains("replay")).FirstOrDefault();
-        if (_replayCamera == null)
-        {
-            _replayCamera = Resources.FindObjectsOfTypeAll<Camera>().Where(c => c.name.ToLower().Contains("recorder")).FirstOrDefault();
-        }
         if (_replayCamera == null)
         {
             _replayCamera = Camera.main;
         }
 
         if (_replayCamera == null)
-        { _log.Error("Replay camera not found."); }
+        { _log.Error("Replay camera not found."); yield break; }
 
+        _replayCamera.enabled = true;
 
         // make the render texture (this is where the magic happens)
         _rt = new RenderTexture(_w, _h, 24, RenderTextureFormat.ARGB32)
@@ -165,6 +168,8 @@ public class ReplayVideoRenderer : IInitializable, IDisposable, IAffinity
         _replayCamera.targetTexture = _rt;
         _origProj = _replayCamera.projectionMatrix;
 
+        _lastCameraPos = _replayCamera.transform.position;
+        _lastCameraRot = _replayCamera.transform.rotation;
         try
         {
             _atsc.StopSong();
@@ -182,6 +187,13 @@ public class ReplayVideoRenderer : IInitializable, IDisposable, IAffinity
             for (float t = 0f; t < songLen; t += dt)
             {
                 SetSongTime(t);
+
+                Vector3 targetPos = _replayCamera.transform.position + ReplayRenderSettings.RenderOffset;
+                Quaternion targetRot = _replayCamera.transform.rotation;
+                _replayCamera.transform.position = Vector3.Lerp(_lastCameraPos, targetPos, 0.1f);
+                _replayCamera.transform.rotation = Quaternion.Slerp(_lastCameraRot, targetRot, 0.1f);
+                _lastCameraPos = _replayCamera.transform.position;
+                _lastCameraRot = _replayCamera.transform.rotation;
 
                 yield return WaitForSlotAsync();
 
