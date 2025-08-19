@@ -18,18 +18,6 @@
 				<increment-setting text="Render FPS" id="fps" min="30" max="360" increment="10" integer-only="true" apply-on-change="true" value="fps" on-change="OnFPSChanged"/>
 			</vertical>
 
-			<!-- Camera Settings -->
-			<text text="Camera Settings" font-size="4" font-style="Bold" align="Center" color="#FFFFFF"/>
-			<slider-setting show-buttons='true' increment='0.1' min='60' max='120' text='Camera FOV' on-change='OnReplayCameraFOVChanged' value='replayCameraFOV' apply-on-change='true' />
-				<horizontal spacing='2'>
-					<slider-setting preferred-width='65' size-delta-x='65' show-buttons='true' increment='0.01' min='-10' max='10'  text='X Offset' on-change='OnXValueOffsetChanged' value='currentXValueOffset' bind-value='true' apply-on-change='true' />
-				</horizontal>
-				<horizontal spacing='2'>
-					<slider-setting preferred-width='65' size-delta-x='65' show-buttons='true' increment='0.01' min='-10' max='10'  text='Y Offset' on-change='OnYValueOffsetChanged' value='currentYValueOffset' bind-value='true' apply-on-change='true' />
-				</horizontal>
-				<horizontal spacing='2'>
-					<slider-setting preferred-width='65' size-delta-x='65' show-buttons='true' increment='0.01' min='-10' max='10'  text='Z Offset' on-change='OnZValueOffsetChanged' value='currentZValueOffset' bind-value='true' apply-on-change='true' />
-				</horizontal>
 			<!-- Bitrate -->
 			<text text="Bitrate Settings" font-size="4" font-style="Bold" align="Center" color="#FFFFFF"/>
 				<increment-setting text="Bitrate (kbps)" id="bitrate" min="1000" max="50000" increment="500" integer-only="true" apply-on-change="true" value="bitrate" on-change="OnBitrateChanged"/>

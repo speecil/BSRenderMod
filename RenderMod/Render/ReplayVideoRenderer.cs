@@ -131,7 +131,6 @@ public class ReplayVideoRenderer : IDisposable, IAffinity
 
     float oldCaptureDeltaTime;
 
-    private Vector3 _lastCameraPos;
     private Quaternion _lastCameraRot;
     private IEnumerator RenderReplayCoroutine()
     {
@@ -140,12 +139,30 @@ public class ReplayVideoRenderer : IDisposable, IAffinity
         {
             yield return null;
         }
-        yield return null; // wait one frame to ensure everything is ready
+        _atsc.StopSong();
+
         // get the replay camera (bl names theirs, ss doesnt and uses main)
-        _replayCamera = Resources.FindObjectsOfTypeAll<Camera>().Where(c => c.name.ToLower().Contains("replay")).FirstOrDefault();
-        if (_replayCamera == null)
+        int tries = 0;
+        while (_replayCamera == null || !_replayCamera.gameObject.activeInHierarchy)
         {
-            _replayCamera = Camera.main;
+            if (tries > 10)
+            {
+                _log.Error("Replay camera not found after 10 tries, giving up.");
+                yield break;
+            }
+
+            _replayCamera = Resources.FindObjectsOfTypeAll<Camera>().Where(c => c.name == "ReplayerViewCamera").FirstOrDefault();
+            if (_replayCamera != null && _replayCamera.gameObject.activeInHierarchy)
+                break;
+
+            tries++;
+            yield return new WaitForEndOfFrame();
+        }
+
+        if (_replayCamera == null || !_replayCamera.gameObject.activeInHierarchy)
+        {
+            _log.Error("Replay camera not found or not active.");
+            _replayCamera = Camera.main; // fallback to main camera
         }
 
         if (_replayCamera == null)
@@ -168,31 +185,30 @@ public class ReplayVideoRenderer : IDisposable, IAffinity
         _replayCamera.targetTexture = _rt;
         _origProj = _replayCamera.projectionMatrix;
 
-        _lastCameraPos = _replayCamera.transform.position;
         _lastCameraRot = _replayCamera.transform.rotation;
+
+        int warmupFrames = Mathf.RoundToInt(_fps * 2f);
+
         try
         {
+            // init
             _atsc.StopSong();
+            _atsc.SeekTo(0);
+
             // get the delta time setup
             oldCaptureDeltaTime = Time.captureDeltaTime;
             Time.captureDeltaTime = 1f / _fps;
-            _replayCamera.fieldOfView = ReplayRenderSettings.RenderFOV;
-            _replayCamera.transform.position += ReplayRenderSettings.RenderOffset;
 
             float songLen = _atsc.songLength;
             float dt = 1f / _fps;
-            int skipFrames = Mathf.Max(1, Mathf.RoundToInt(_fps / ReplayRenderSettings.FPS));
             int frameIndex = 0;
 
             for (float t = 0f; t < songLen; t += dt)
             {
                 SetSongTime(t);
 
-                Vector3 targetPos = _replayCamera.transform.position + ReplayRenderSettings.RenderOffset;
                 Quaternion targetRot = _replayCamera.transform.rotation;
-                _replayCamera.transform.position = Vector3.Lerp(_lastCameraPos, targetPos, 0.1f);
-                _replayCamera.transform.rotation = Quaternion.Slerp(_lastCameraRot, targetRot, 0.1f);
-                _lastCameraPos = _replayCamera.transform.position;
+                _replayCamera.transform.rotation = Quaternion.Slerp(_lastCameraRot, targetRot, 0.2f);
                 _lastCameraRot = _replayCamera.transform.rotation;
 
                 yield return WaitForSlotAsync();
@@ -224,7 +240,6 @@ public class ReplayVideoRenderer : IDisposable, IAffinity
 
                 _progressUI.UpdateProgress(Mathf.Clamp01(t / Mathf.Max(0.0001f, songLen)));
             }
-
 
             // wait for all frames to be processed
             while (!_frameDict.IsEmpty || _availableSlots < BufferCount)

@@ -23,13 +23,6 @@ namespace RenderMod
         [UIValue("preset-options")] private List<string> presetOptions = new List<string>() { "Low", "Medium", "High" };
         [UIValue("preset-option")] private string currentPreset = ReplayRenderSettings.Preset.ToString();
 
-        // camera
-        [UIValue("replayCameraFOV")] private float replayCameraFOV = ReplayRenderSettings.RenderFOV;
-
-        [UIValue("currentXValueOffset")] private float currentXValueOffset = ReplayRenderSettings.RenderOffset.x;
-        [UIValue("currentYValueOffset")] private float currentYValueOffset = ReplayRenderSettings.RenderOffset.y;
-        [UIValue("currentZValueOffset")] private float currentZValueOffset = ReplayRenderSettings.RenderOffset.z;
-
         // actions
 
         [UIAction("OnToggleChanged")]
@@ -59,16 +52,6 @@ namespace RenderMod
                 currentPreset = value;
             }
         }
-
-        [UIAction("OnReplayCameraFOVChanged")]
-        private void OnReplayCameraFOVChanged(float value) => ReplayRenderSettings.RenderFOV = value;
-
-        [UIAction("OnXValueOffsetChanged")]
-        private void OnXValueOffsetChanged(float value) => ReplayRenderSettings.RenderOffset = new Vector3(value, ReplayRenderSettings.RenderOffset.y, ReplayRenderSettings.RenderOffset.z);
-        [UIAction("OnYValueOffsetChanged")]
-        private void OnYValueOffsetChanged(float value) => ReplayRenderSettings.RenderOffset = new Vector3(ReplayRenderSettings.RenderOffset.x, value, ReplayRenderSettings.RenderOffset.z);
-        [UIAction("OnZValueOffsetChanged")]
-        private void OnZValueOffsetChanged(float value) => ReplayRenderSettings.RenderOffset = new Vector3(ReplayRenderSettings.RenderOffset.x, ReplayRenderSettings.RenderOffset.y, value);
 
         [UIComponent("encoder-test-text")]
         private TMPro.TextMeshProUGUI encoderTestText;

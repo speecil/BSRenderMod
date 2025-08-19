@@ -33,8 +33,8 @@ namespace RenderMod.Render
         public static string RenderRoot = "Renders";
 
         // camera
-        public static float RenderFOV = 70f;
-        public static Vector3 RenderOffset = new Vector3(0, -0.1f, -0.1f);
+        //public static float RenderFOV = 70f;
+        //public static Vector3 RenderOffset = new Vector3(0, 0f, -0.15f);
 
         // advanced
         public static string ExtraFFmpegArgs = ""; // additional arguments for ffmpeg
