@@ -233,7 +233,7 @@ public class ReplayVideoRenderer : IDisposable, IAffinity
 
                     Interlocked.Increment(ref _availableSlots);
                     _availableSlotSignal.Release();
-                });
+                }).WaitForCompletion();
 
                 _availableSlots--;
                 frameIndex++;
