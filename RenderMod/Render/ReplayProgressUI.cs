@@ -51,9 +51,14 @@ public class ReplayProgressUI
         _progressText.text = "Rendering Replay: 0%";
     }
 
-    public void UpdateProgress(float progress01)
+    public void UpdateProgress(float progress01, string message = null)
     {
         if (_progressText == null) return;
+        if(message != null)
+        {
+            _progressText.text = message;
+            return;
+        }
 
         int percent = Mathf.RoundToInt(Mathf.Clamp01(progress01) * 100f);
         _progressText.text = $"Rendering Replay: {percent}%";

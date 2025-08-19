@@ -116,8 +116,6 @@ public class ReplayVideoRenderer : IDisposable, IAffinity
             $"{presetArgs} " +
             $"\"{_unfinishedPath}\"";
 
-
-
         _pipe = new FFmpegPipe(ffArgs);
 
         // start the writer task
@@ -207,9 +205,21 @@ public class ReplayVideoRenderer : IDisposable, IAffinity
             {
                 SetSongTime(t);
 
-                Quaternion targetRot = _replayCamera.transform.rotation;
-                _replayCamera.transform.rotation = Quaternion.Slerp(_lastCameraRot, targetRot, 0.2f);
-                _lastCameraRot = _replayCamera.transform.rotation;
+                Quaternion smoothedReplayRot = Quaternion.Slerp(
+                    _lastCameraRot,
+                    _replayCamera.transform.rotation,
+                    Time.deltaTime * 5f
+                );
+
+                Quaternion targetForward = Quaternion.LookRotation(Vector3.forward, Vector3.up);
+                Quaternion finalRot = Quaternion.Slerp(
+                    smoothedReplayRot,
+                    targetForward,
+                    Time.deltaTime * 0.2f
+                );
+
+                _replayCamera.transform.rotation = finalRot;
+                _lastCameraRot = finalRot;
 
                 yield return WaitForSlotAsync();
 
@@ -424,5 +434,13 @@ public class ReplayVideoRenderer : IDisposable, IAffinity
     private void SetSongTime(float songTime)
     {
         _atsc.SetField("_songTime", songTime);
+    }
+
+    [AffinityPatch(typeof(FlyingScoreSpawner), nameof(FlyingScoreSpawner.SpawnFlyingScoreNextFrame))]
+    [AffinityPrefix]
+    public bool DisableFlyingScoreSpawning(FlyingScoreSpawner __instance, IReadonlyCutScoreBuffer cutScoreBuffer, Color color)
+    {
+        __instance.SpawnFlyingScore(cutScoreBuffer, color);
+        return false;
     }
 }
