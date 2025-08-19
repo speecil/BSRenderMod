@@ -18,7 +18,7 @@ using static CustomLevelLoader;
 
 public class ReplayVideoRenderer : IDisposable, IAffinity
 {
-    [Inject] private BeatmapLevel _beatmapLevel;
+    [Inject] private IDifficultyBeatmap _beatmapLevel;
     [Inject] private SiraLog _log;
     [Inject] private ReplayProgressUI _progressUI;
     [Inject] private IReturnToMenuController _returnToMenuController;
@@ -80,16 +80,20 @@ public class ReplayVideoRenderer : IDisposable, IAffinity
         if (_atsc == null) { _log.Error("AudioTimeSyncController not found."); return; }
         if (_beatmapLevel == null) { _log.Error("BeatmapLevel is null."); return; }
 
-        var loader = Resources.FindObjectsOfTypeAll<CustomLevelLoader>().FirstOrDefault();
-        var saveDataDict = loader?.GetField<Dictionary<string, LoadedSaveData>, CustomLevelLoader>("_loadedBeatmapSaveData");
-        if (saveDataDict == null || !saveDataDict.TryGetValue(_beatmapLevel.levelID, out var saveData))
+        string customLevelPath = "";
+        if (_beatmapLevel is CustomDifficultyBeatmap level)
         {
-            _log.Error($"No save data for {_beatmapLevel.levelID}");
+            customLevelPath = ((CustomBeatmapLevel)level.level).customLevelPath;
+        }
+
+        if(string.IsNullOrEmpty(customLevelPath))
+        {
+            _log.Error("Custom level path is empty or null. Cannot find song file.");
             return;
         }
 
         // i swear to god if a mapper puts in a second .ogg or .egg file in the custom level folder, i will cry
-        _songPath = Directory.GetFiles(saveData.customLevelFolderInfo.folderPath)
+        _songPath = Directory.GetFiles(customLevelPath)
                              .FirstOrDefault(x =>
                              {
                                  var l = x.ToLower();
@@ -146,21 +150,28 @@ public class ReplayVideoRenderer : IDisposable, IAffinity
             if (tries > 10)
             {
                 _log.Error("Replay camera not found after 10 tries, giving up.");
-                yield break;
+                break;
             }
 
             _replayCamera = Resources.FindObjectsOfTypeAll<Camera>().Where(c => c.name == "ReplayerViewCamera").FirstOrDefault();
-            if (_replayCamera != null && _replayCamera.gameObject.activeInHierarchy)
+            if (_replayCamera == null)
+            {
+                _replayCamera = Resources.FindObjectsOfTypeAll<Camera>().Where(c => c.name == "RecorderCamera").FirstOrDefault();
+            }
+
+            if(_replayCamera != null)
+            {
                 break;
+            }
 
             tries++;
-            yield return new WaitForEndOfFrame();
+            yield return null;
         }
 
-        if (_replayCamera == null || !_replayCamera.gameObject.activeInHierarchy)
+        if (_replayCamera == null)
         {
             _log.Error("Replay camera not found or not active.");
-            _replayCamera = Camera.main; // fallback to main camera
+            _replayCamera = Camera.main;
         }
 
         if (_replayCamera == null)
@@ -208,18 +219,11 @@ public class ReplayVideoRenderer : IDisposable, IAffinity
                 Quaternion smoothedReplayRot = Quaternion.Slerp(
                     _lastCameraRot,
                     _replayCamera.transform.rotation,
-                    Time.deltaTime * 5f
+                    0.5f
                 );
 
-                Quaternion targetForward = Quaternion.LookRotation(Vector3.forward, Vector3.up);
-                Quaternion finalRot = Quaternion.Slerp(
-                    smoothedReplayRot,
-                    targetForward,
-                    Time.deltaTime * 0.2f
-                );
-
-                _replayCamera.transform.rotation = finalRot;
-                _lastCameraRot = finalRot;
+                _replayCamera.transform.rotation = smoothedReplayRot;
+                _lastCameraRot = smoothedReplayRot;
 
                 yield return WaitForSlotAsync();
 
@@ -436,11 +440,11 @@ public class ReplayVideoRenderer : IDisposable, IAffinity
         _atsc.SetField("_songTime", songTime);
     }
 
-    [AffinityPatch(typeof(FlyingScoreSpawner), nameof(FlyingScoreSpawner.SpawnFlyingScoreNextFrame))]
-    [AffinityPrefix]
-    public bool DisableFlyingScoreSpawning(FlyingScoreSpawner __instance, IReadonlyCutScoreBuffer cutScoreBuffer, Color color)
-    {
-        __instance.SpawnFlyingScore(cutScoreBuffer, color);
-        return false;
-    }
+    //[AffinityPatch(typeof(FlyingScoreSpawner), nameof(FlyingScoreSpawner.SpawnFlyingScoreNextFrame))]
+    //[AffinityPrefix]
+    //public bool DisableFlyingScoreSpawning(FlyingScoreSpawner __instance, IReadonlyCutScoreBuffer cutScoreBuffer, Color color)
+    //{
+    //    __instance.SpawnFlyingScore(cutScoreBuffer, color);
+    //    return false;
+    //}
 }

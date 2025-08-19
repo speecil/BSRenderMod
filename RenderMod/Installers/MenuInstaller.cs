@@ -6,7 +6,8 @@ namespace RenderMod.Installers
     {
         public override void InstallBindings()
         {
-            Container.BindInterfacesAndSelfTo<UIPatch>().AsSingle();
+            //Container.BindInterfacesAndSelfTo<UIPatch>().AsSingle();
+            BeatSaberMarkupLanguage.GameplaySetup.GameplaySetup.instance.AddTab("Render Mod", "RenderMod.UI.RenderModView.bsml", UIPatch.instance);
         }
     }
 }

@@ -8,43 +8,41 @@ using Zenject;
 
 namespace RenderMod
 {
-    internal class UIPatch : IInitializable, IDisposable
+    internal class UIPatch : PersistentSingleton<UIPatch>
     {
-        [Inject] private GameplaySetup gameplaySetup;
-
-        [UIValue("renderEnabled")] private bool renderEnabled = ReplayRenderSettings.RenderEnabled;
-        [UIValue("width")] private int width = ReplayRenderSettings.Width;
-        [UIValue("height")] private int height = ReplayRenderSettings.Height;
-        [UIValue("fps")] private int fps = ReplayRenderSettings.FPS;
-        [UIValue("bitrate")] private int bitrate = ReplayRenderSettings.BitrateKbps;
-        [UIValue("extraFFmpegArgs")] private string extraFFmpegArgs = ReplayRenderSettings.ExtraFFmpegArgs;
+        [UIValue("renderEnabled")] public bool renderEnabled = ReplayRenderSettings.RenderEnabled;
+        [UIValue("width")] public int width = ReplayRenderSettings.Width;
+        [UIValue("height")] public int height = ReplayRenderSettings.Height;
+        [UIValue("fps")] public int fps = ReplayRenderSettings.FPS;
+        [UIValue("bitrate")] public int bitrate = ReplayRenderSettings.BitrateKbps;
+        [UIValue("extraFFmpegArgs")] public string extraFFmpegArgs = ReplayRenderSettings.ExtraFFmpegArgs;
 
         // presets
-        [UIValue("preset-options")] private List<string> presetOptions = new List<string>() { "Low", "Medium", "High" };
-        [UIValue("preset-option")] private string currentPreset = ReplayRenderSettings.Preset.ToString();
+        [UIValue("preset-options")] public List<object> presetOptions = new List<object>() { "Low", "Medium", "High" };
+        [UIValue("preset-option")] public string currentPreset = ReplayRenderSettings.Preset.ToString();
 
         // actions
 
         [UIAction("OnToggleChanged")]
-        private void OnToggleChanged(bool value) => ReplayRenderSettings.RenderEnabled = value;
+        public void OnToggleChanged(bool value) => ReplayRenderSettings.RenderEnabled = value;
 
         [UIAction("OnWidthChanged")]
-        private void OnWidthChanged(int value) => ReplayRenderSettings.Width = value;
+        public void OnWidthChanged(int value) => ReplayRenderSettings.Width = value;
 
         [UIAction("OnHeightChanged")]
-        private void OnHeightChanged(int value) => ReplayRenderSettings.Height = value;
+        public void OnHeightChanged(int value) => ReplayRenderSettings.Height = value;
 
         [UIAction("OnFPSChanged")]
-        private void OnFPSChanged(int value) => ReplayRenderSettings.FPS = value;
+        public void OnFPSChanged(int value) => ReplayRenderSettings.FPS = value;
 
         [UIAction("OnBitrateChanged")]
-        private void OnBitrateChanged(int value) => ReplayRenderSettings.BitrateKbps = value;
+        public void OnBitrateChanged(int value) => ReplayRenderSettings.BitrateKbps = value;
 
         [UIAction("OnExtraArgsChanged")]
-        private void OnExtraArgsChanged(string value) => ReplayRenderSettings.ExtraFFmpegArgs = value;
+        public void OnExtraArgsChanged(string value) => ReplayRenderSettings.ExtraFFmpegArgs = value;
 
         [UIAction("OnPresetChanged")]
-        private void OnPresetChanged(string value)
+        public void OnPresetChanged(string value)
         {
             if (Enum.TryParse(value, out QualityPreset preset))
             {
@@ -54,11 +52,11 @@ namespace RenderMod
         }
 
         [UIComponent("encoder-test-text")]
-        private TMPro.TextMeshProUGUI encoderTestText;
+        public TMPro.TextMeshProUGUI encoderTestText;
 
         // encoder tester
         [UIAction("OnEncoderTestClicked")]
-        private void OnTestEncoder()
+        public void OnTestEncoder()
         {
             try
             {
@@ -69,18 +67,6 @@ namespace RenderMod
             {
                 Debug.LogError($"Failed to build encoder args: {ex}");
             }
-        }
-
-        // lifecycle methods
-
-        public void Initialize()
-        {
-            gameplaySetup.AddTab("Render Mod", "RenderMod.UI.RenderModView.bsml", this, MenuType.Solo);
-        }
-
-        public void Dispose()
-        {
-            gameplaySetup?.RemoveTab("Render Mod");
         }
     }
 }
