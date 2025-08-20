@@ -132,13 +132,7 @@ public class ReplayVideoRenderer : IDisposable, IAffinity
     private Quaternion _lastCameraRot;
     private IEnumerator RenderReplayCoroutine()
     {
-        _progressUI.Show();
-        while (!_atsc.isReady || !_atsc.isAudioLoaded)
-        {
-            yield return null;
-        }
-        _atsc.StopSong();
-
+        _replayCamera = Resources.FindObjectsOfTypeAll<Camera>().FirstOrDefault(c => c.name == "ReplayerViewCamera" || c.name == "RecorderCamera");
         // get the replay camera (bl names theirs, ss doesnt and uses main)
         int tries = 0;
         while (_replayCamera == null || !_replayCamera.gameObject.activeInHierarchy)
@@ -146,16 +140,34 @@ public class ReplayVideoRenderer : IDisposable, IAffinity
             if (tries > 10)
             {
                 _log.Error("Replay camera not found after 10 tries, giving up.");
-                yield break;
+                _returnToMenuController.ReturnToMenu();
+                break;
             }
 
+            // beatleader
             _replayCamera = Resources.FindObjectsOfTypeAll<Camera>().Where(c => c.name == "ReplayerViewCamera").FirstOrDefault();
             if (_replayCamera != null && _replayCamera.gameObject.activeInHierarchy)
+            {
+                // scoresaber
+                _replayCamera = Resources.FindObjectsOfTypeAll<Camera>().Where(c => c.name == "RecorderCamera").FirstOrDefault();
+            }
+
+            if (_replayCamera != null && _replayCamera.gameObject.activeInHierarchy)
+            {
                 break;
+            }
 
             tries++;
             yield return new WaitForEndOfFrame();
         }
+        _progressUI.Show();
+        while (!_atsc.isReady || !_atsc.isAudioLoaded)
+        {
+            yield return null;
+        }
+        _atsc.StopSong();
+
+       
 
         if (_replayCamera == null || !_replayCamera.gameObject.activeInHierarchy)
         {
@@ -215,7 +227,7 @@ public class ReplayVideoRenderer : IDisposable, IAffinity
                 Quaternion finalRot = Quaternion.Slerp(
                     smoothedReplayRot,
                     targetForward,
-                    Time.deltaTime * 0.2f
+                    Time.deltaTime * 0.05f
                 );
 
                 _replayCamera.transform.rotation = finalRot;
