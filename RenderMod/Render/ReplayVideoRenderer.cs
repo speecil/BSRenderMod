@@ -11,12 +11,14 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine;
 using UnityEngine.Rendering;
 using Zenject;
 using static CustomLevelLoader;
 
-public class ReplayVideoRenderer : IDisposable, IAffinity
+public class ReplayVideoRenderer : IDisposable, IAffinity, ITickable
 {
     [Inject] private BeatmapLevel _beatmapLevel;
     [Inject] private SiraLog _log;
@@ -33,19 +35,8 @@ public class ReplayVideoRenderer : IDisposable, IAffinity
     private string _finishedPath;
     private string _songPath;
 
-    private volatile bool _rendering;
-
     private const int BufferCount = 8;
     private byte[][] _frameBuffers;
-    private int _availableSlots;
-
-    private readonly ConcurrentDictionary<int, byte[]> _frameDict = new ConcurrentDictionary<int, byte[]>();
-    private int _nextWriteIndex = 0;
-
-    private Task _writerTask;
-    private CancellationTokenSource _writerCts;
-    private SemaphoreSlim _queueSignal = new SemaphoreSlim(0);
-    private SemaphoreSlim _availableSlotSignal;
 
     private Matrix4x4 _origProj;
     private bool _hadTargetTex;
@@ -58,7 +49,7 @@ public class ReplayVideoRenderer : IDisposable, IAffinity
 
     [AffinityPatch(typeof(AudioTimeSyncController), nameof(AudioTimeSyncController.StartSong))]
     [AffinityPostfix]
-    public void a()
+    public void Init()
     {
         gcDisabler = new GameObject("ReplayVideoRenderer");
         var gcdisable = gcDisabler.AddComponent<DisableGCWhileEnabled>();
@@ -100,9 +91,6 @@ public class ReplayVideoRenderer : IDisposable, IAffinity
         for (int i = 0; i < BufferCount; i++)
             _frameBuffers[i] = new byte[_w * _h * 3];
 
-        _availableSlots = BufferCount;
-        _availableSlotSignal = new SemaphoreSlim(BufferCount);
-
         var (encoder, presetArgs) = EncoderHelpers.BuildEncoderArgs();
 
         string ffArgs =
@@ -112,62 +100,66 @@ public class ReplayVideoRenderer : IDisposable, IAffinity
             $"-s {_w}x{_h} " +
             $"-r {_fps} " +
             $"-i - " +
-            $"-vf vflip " +
             $"{presetArgs} " +
             $"\"{_unfinishedPath}\"";
 
         _pipe = new FFmpegPipe(ffArgs);
+        InitInit();
+    }
 
-        // start the writer task
-        _writerCts = new CancellationTokenSource();
-        _writerTask = Task.Run(() => WriterTaskProc(_writerCts.Token));
+    int frameIndex = 0;
+    private bool _readyToRender = false;
+    public void Tick()
+    {
+        if (!_readyToRender)
+        {
+            return;
+        }
+        //Quaternion smoothedReplayRot = Quaternion.Slerp(
+        //            _lastCameraRot,
+        //            _replayCamera.transform.rotation,
+        //            Time.deltaTime * 5f
+        //        );
 
-        _rendering = true;
-        _atscPrevEnabled = _atsc.enabled;
-        _atsc.StartCoroutine(RenderReplayCoroutine());
+        //Quaternion targetForward = Quaternion.LookRotation(Vector3.forward, Vector3.up);
+        //Quaternion finalRot = Quaternion.Slerp(
+        //    smoothedReplayRot,
+        //    targetForward,
+        //    Time.deltaTime * 0.05f
+        //);
+
+        //_replayCamera.transform.rotation = finalRot;
+        //_lastCameraRot = finalRot;
+
+        int bufferIdx = frameIndex % BufferCount;
+
+        int capturedIndex = frameIndex;
+        AsyncGPUReadback.Request(_rt, 0, TextureFormat.RGB24, req =>
+        {
+            if (!req.hasError)
+            {
+                var data = req.GetData<byte>();
+                FlipFrame(data, _frameBuffers[bufferIdx], _w, _h);
+                _pipe.WriteFrame(_frameBuffers[bufferIdx]);
+            }
+            else
+            {
+                _log.Warn("GPU readback failed for a frame.");
+            }
+
+        }).WaitForCompletion();
+
+        _progressUI.UpdateProgress(Mathf.Clamp01(_atsc.songTime / Mathf.Max(0.0001f, _atsc.songLength)));
+        frameIndex++;
     }
 
     float oldCaptureDeltaTime;
 
     private Quaternion _lastCameraRot;
-    private IEnumerator RenderReplayCoroutine()
+    private void InitInit()
     {
         _replayCamera = Resources.FindObjectsOfTypeAll<Camera>().FirstOrDefault(c => c.name == "ReplayerViewCamera" || c.name == "RecorderCamera");
         // get the replay camera (bl names theirs, ss doesnt and uses main)
-        int tries = 0;
-        while (_replayCamera == null || !_replayCamera.gameObject.activeInHierarchy)
-        {
-            if (tries > 10)
-            {
-                _log.Error("Replay camera not found after 10 tries, giving up.");
-                _returnToMenuController.ReturnToMenu();
-                break;
-            }
-
-            // beatleader
-            _replayCamera = Resources.FindObjectsOfTypeAll<Camera>().Where(c => c.name == "ReplayerViewCamera").FirstOrDefault();
-            if (_replayCamera != null && _replayCamera.gameObject.activeInHierarchy)
-            {
-                // scoresaber
-                _replayCamera = Resources.FindObjectsOfTypeAll<Camera>().Where(c => c.name == "RecorderCamera").FirstOrDefault();
-            }
-
-            if (_replayCamera != null && _replayCamera.gameObject.activeInHierarchy)
-            {
-                break;
-            }
-
-            tries++;
-            yield return new WaitForEndOfFrame();
-        }
-        _progressUI.Show();
-        while (!_atsc.isReady || !_atsc.isAudioLoaded)
-        {
-            yield return null;
-        }
-        _atsc.StopSong();
-
-       
 
         if (_replayCamera == null || !_replayCamera.gameObject.activeInHierarchy)
         {
@@ -176,7 +168,7 @@ public class ReplayVideoRenderer : IDisposable, IAffinity
         }
 
         if (_replayCamera == null)
-        { _log.Error("Replay camera not found."); yield break; }
+        { _log.Error("Replay camera not found."); return; }
 
         _replayCamera.enabled = true;
 
@@ -199,134 +191,27 @@ public class ReplayVideoRenderer : IDisposable, IAffinity
 
         int warmupFrames = Mathf.RoundToInt(_fps * 2f);
 
-        try
-        {
-            // init
-            _atsc.StopSong();
-            _atsc.SeekTo(0);
+        // get the delta time setup
+        oldCaptureDeltaTime = Time.captureDeltaTime;
+        Time.captureDeltaTime = 1f / _fps;
 
-            // get the delta time setup
-            oldCaptureDeltaTime = Time.captureDeltaTime;
-            Time.captureDeltaTime = 1f / _fps;
+        _progressUI.Show();
 
-            float songLen = _atsc.songLength;
-            float dt = 1f / _fps;
-            int frameIndex = 0;
-
-            for (float t = 0f; t < songLen; t += dt)
-            {
-                SetSongTime(t);
-
-                Quaternion smoothedReplayRot = Quaternion.Slerp(
-                    _lastCameraRot,
-                    _replayCamera.transform.rotation,
-                    Time.deltaTime * 5f
-                );
-
-                Quaternion targetForward = Quaternion.LookRotation(Vector3.forward, Vector3.up);
-                Quaternion finalRot = Quaternion.Slerp(
-                    smoothedReplayRot,
-                    targetForward,
-                    Time.deltaTime * 0.05f
-                );
-
-                _replayCamera.transform.rotation = finalRot;
-                _lastCameraRot = finalRot;
-
-                yield return WaitForSlotAsync();
-
-                int bufferIdx = frameIndex % BufferCount;
-
-                int capturedIndex = frameIndex;
-                AsyncGPUReadback.Request(_rt, 0, TextureFormat.RGB24, req =>
-                {
-                    if (!req.hasError)
-                    {
-                        var data = req.GetData<byte>();
-                        data.CopyTo(_frameBuffers[bufferIdx]);
-
-                        _frameDict[capturedIndex] = _frameBuffers[bufferIdx];
-                        _queueSignal.Release();
-                    }
-                    else
-                    {
-                        _log.Warn("GPU readback failed for a frame.");
-                    }
-
-                    Interlocked.Increment(ref _availableSlots);
-                    _availableSlotSignal.Release();
-                }).WaitForCompletion();
-
-                _availableSlots--;
-                frameIndex++;
-
-                _progressUI.UpdateProgress(Mathf.Clamp01(t / Mathf.Max(0.0001f, songLen)));
-            }
-
-            // wait for all frames to be processed
-            while (!_frameDict.IsEmpty || _availableSlots < BufferCount)
-                yield return null;
-        }
-        finally
-        {
-            _rendering = false;
-            _log.Notice("Stopping replay rendering...");
-            _writerCts?.Cancel();
-            try { _writerTask?.Wait(5000); } catch { }
-            _pipe?.Close();
-            _log.Notice("Replay rendering stopped.");
-
-            if (_replayCamera != null)
-            {
-                _replayCamera.projectionMatrix = _origProj;
-                _replayCamera.targetTexture = _hadTargetTex ? _origTarget : null;
-            }
-
-            if (_rt != null)
-            {
-                try { _rt.Release(); } catch { }
-                try { UnityEngine.Object.Destroy(_rt); } catch { }
-                _rt = null;
-            }
-
-            if (_atsc != null) _atsc.enabled = _atscPrevEnabled;
-
-            _progressUI.Hide();
-            Time.captureDeltaTime = oldCaptureDeltaTime;
-            _returnToMenuController.ReturnToMenu();
-        }
+        _readyToRender = true;
     }
 
-    private IEnumerator WaitForSlotAsync()
+    private unsafe void FlipFrame(NativeArray<byte> src, byte[] dst, int width, int height)
     {
-        bool acquired = false;
-        while (!acquired)
-        {
-            if (_availableSlotSignal.Wait(0))
-            {
-                acquired = true;
-            }
-            else
-            {
-                yield return null;
-            }
-        }
-    }
+        byte* srcPtr = (byte*)src.GetUnsafeReadOnlyPtr();
 
-    private async Task WriterTaskProc(CancellationToken token)
-    {
-        while (!token.IsCancellationRequested)
+        for (int y = 0; y < height; y++)
         {
-            if (_frameDict.TryRemove(_nextWriteIndex, out var frame))
-            {
-                try { _pipe.WriteFrame(frame); } catch (Exception e) { _log.Warn($"Failed to write frame: {e}"); }
+            int srcRow = y * width * 3;
+            int dstRow = (height - 1 - y) * width * 3;
 
-                _nextWriteIndex++;
-            }
-            else
+            fixed (byte* dstPtr = &dst[dstRow])
             {
-                try { await _queueSignal.WaitAsync(token); }
-                catch (OperationCanceledException) { break; }
+                Buffer.MemoryCopy(srcPtr + srcRow, dstPtr, width * 3, width * 3);
             }
         }
     }
@@ -395,14 +280,9 @@ public class ReplayVideoRenderer : IDisposable, IAffinity
         _log.Notice($"Remuxing complete. Final MP4: {outputPath}");
     }
 
-
-
     public void Dispose()
     {
-        _rendering = false;
-        _writerCts?.Cancel();
-        try { _writerTask?.Wait(5000); } catch { }
-
+        _readyToRender = false;
         _pipe?.Close();
 
         if (_replayCamera != null)
@@ -422,6 +302,10 @@ public class ReplayVideoRenderer : IDisposable, IAffinity
         RemuxAsync(_unfinishedPath, _songPath, _finishedPath, _fps);
         ClearUnfinishedDirectory();
         GameObject.Destroy(gcDisabler);
+
+        Time.captureDeltaTime = oldCaptureDeltaTime;
+        _progressUI.UpdateProgress(1f, "Rendering complete!");
+        _progressUI.Hide();
     }
 
     private void ClearUnfinishedDirectory()
@@ -441,11 +325,6 @@ public class ReplayVideoRenderer : IDisposable, IAffinity
                 _log.Error($"Failed to clear unfinished directory: {ex}");
             }
         }
-    }
-
-    private void SetSongTime(float songTime)
-    {
-        _atsc.SetField("_songTime", songTime);
     }
 
     [AffinityPatch(typeof(FlyingScoreSpawner), nameof(FlyingScoreSpawner.SpawnFlyingScoreNextFrame))]
