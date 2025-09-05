@@ -145,8 +145,26 @@ public class ReplayVideoRenderer : IDisposable, IAffinity, ITickable
     private Quaternion _lastCameraRot;
     private void InitInit()
     {
-          _replayCamera = Resources.FindObjectsOfTypeAll<Camera>().FirstOrDefault(c => c.name == "ReplayerViewCamera" || c.name == "RecorderCamera");
         // get the replay camera (bl names theirs, ss doesnt and uses main)
+        foreach (var x in Resources.FindObjectsOfTypeAll<Camera>())
+        {
+            _log.Notice($"Camera found: {x.name} (active: {x.gameObject.activeInHierarchy})");
+            if (x.name == "Cam")
+            {
+                if (x.gameObject.transform.parent.name == "Cam2_Main")
+                {
+                    _log.Notice("Found Cam2 Main Camera");
+                    _replayCamera = x;
+                    break;
+                }
+            }
+            // fallback to bl / ss raw cameras
+            if(x.name == "ReplayerViewCamera" || x.name == "RecorderCamera")
+            {
+                _replayCamera = x;
+                break;
+            }
+        }
 
         if (_replayCamera == null || !_replayCamera.gameObject.activeInHierarchy)
         {
@@ -154,8 +172,15 @@ public class ReplayVideoRenderer : IDisposable, IAffinity, ITickable
             _replayCamera = Camera.main; // fallback to main camera
         }
 
+        // fuck fuck fuck fuck something wrong
         if (_replayCamera == null)
-        { _log.Error("Replay camera not found."); return; }
+        {
+            _log.Error("Replay camera not found. SOMETHING IS SERIOUSLY WRONG");
+            return; 
+        }
+
+
+        _log.Notice($"Using replay camera: {_replayCamera.name}");
 
         _replayCamera.enabled = true;
 
