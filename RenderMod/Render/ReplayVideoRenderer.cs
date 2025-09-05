@@ -3,14 +3,9 @@ using RenderMod.Render;
 using SiraUtil.Affinity;
 using SiraUtil.Logging;
 using System;
-using System.Collections;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine;
@@ -20,41 +15,33 @@ using static CustomLevelLoader;
 
 public class ReplayVideoRenderer : IDisposable, IAffinity, ITickable
 {
-    [Inject] private BeatmapLevel _beatmapLevel;
-    [Inject] private SiraLog _log;
-    [Inject] private ReplayProgressUI _progressUI;
-    [Inject] private IReturnToMenuController _returnToMenuController;
+    [Inject] private BeatmapLevel _beatmapLevel = null;
+    [Inject] private SiraLog _log = null;
+    [Inject] private ReplayProgressUI _progressUI = null;
 
-    private AudioTimeSyncController _atsc;
-    private Camera _replayCamera;
+    private AudioTimeSyncController _atsc = null;
+    private Camera _replayCamera = null;
 
-    private RenderTexture _rt;
-    private FFmpegPipe _pipe;
+    private RenderTexture _rt = null;
+    private FFmpegPipe _pipe = null;
 
-    private string _unfinishedPath;
-    private string _finishedPath;
-    private string _songPath;
+    private string _unfinishedPath = null;
+    private string _finishedPath = null;
+    private string _songPath = null;
 
     private const int BufferCount = 8;
-    private byte[][] _frameBuffers;
+    private byte[][] _frameBuffers = null;
 
-    private Matrix4x4 _origProj;
-    private bool _hadTargetTex;
-    private RenderTexture _origTarget;
+    private Matrix4x4 _origProj = Matrix4x4.identity;
+    private bool _hadTargetTex = false;
+    private RenderTexture _origTarget = null;
 
-    private int _w, _h, _fps;
-    private bool _atscPrevEnabled;
-
-    GameObject gcDisabler;
+    private int _w, _h, _fps = 0;
 
     [AffinityPatch(typeof(AudioTimeSyncController), nameof(AudioTimeSyncController.StartSong))]
     [AffinityPostfix]
     public void Init()
     {
-        gcDisabler = new GameObject("ReplayVideoRenderer");
-        var gcdisable = gcDisabler.AddComponent<DisableGCWhileEnabled>();
-        gcdisable.enabled = true; // disable GC while this component is enabled
-
         _w = ReplayRenderSettings.Width;
         _h = ReplayRenderSettings.Height;
         _fps = Mathf.Max(1, ReplayRenderSettings.FPS);
@@ -158,7 +145,7 @@ public class ReplayVideoRenderer : IDisposable, IAffinity, ITickable
     private Quaternion _lastCameraRot;
     private void InitInit()
     {
-        _replayCamera = Resources.FindObjectsOfTypeAll<Camera>().FirstOrDefault(c => c.name == "ReplayerViewCamera" || c.name == "RecorderCamera");
+          _replayCamera = Resources.FindObjectsOfTypeAll<Camera>().FirstOrDefault(c => c.name == "ReplayerViewCamera" || c.name == "RecorderCamera");
         // get the replay camera (bl names theirs, ss doesnt and uses main)
 
         if (_replayCamera == null || !_replayCamera.gameObject.activeInHierarchy)
@@ -197,7 +184,7 @@ public class ReplayVideoRenderer : IDisposable, IAffinity, ITickable
 
         _progressUI.Show();
 
-        _readyToRender = true;
+        _readyToRender = true;    
     }
 
     private unsafe void FlipFrame(NativeArray<byte> src, byte[] dst, int width, int height)
@@ -216,48 +203,6 @@ public class ReplayVideoRenderer : IDisposable, IAffinity, ITickable
         }
     }
 
-    private void RemuxRawH264ToMp4(string rawH264Path, string outputMp4Path)
-    {
-        _log.Notice($"Wrapping raw H264 {rawH264Path} into MP4 {outputMp4Path}...");
-
-        var ffm = new Process();
-        ffm.StartInfo.FileName = "ffmpeg";
-        ffm.StartInfo.Arguments =
-            $"-y -i \"{rawH264Path}\" " +
-            "-c:v copy " +
-            $"\"{outputMp4Path}\"";
-        ffm.StartInfo.UseShellExecute = false;
-        ffm.StartInfo.CreateNoWindow = true;
-        ffm.Start();
-        ffm.WaitForExit();
-
-        _log.Notice($"MP4 without audio created: {outputMp4Path}");
-    }
-
-    private void AddAudioToMp4(string videoMp4Path, string audioPath, string finalMp4Path)
-    {
-        if (!File.Exists(audioPath))
-        {
-            _log.Error($"Audio file not found: {audioPath}, skipping audio mux.");
-            return;
-        }
-
-        _log.Notice($"Adding audio {audioPath} to {videoMp4Path} -> {finalMp4Path}...");
-
-        var ffm = new Process();
-        ffm.StartInfo.FileName = "ffmpeg";
-        ffm.StartInfo.Arguments =
-            $"-y -i \"{videoMp4Path}\" -i \"{audioPath}\" -c:v copy -c:a aac -shortest \"{finalMp4Path}\"";
-        ffm.StartInfo.UseShellExecute = false;
-        ffm.StartInfo.CreateNoWindow = true;
-        ffm.Start();
-        ffm.WaitForExit();
-
-        File.Delete(videoMp4Path); // clean up the intermediate video file
-
-        _log.Notice($"Final MP4 with audio created: {finalMp4Path}");
-    }
-
     private void RemuxAsync(string videoPath, string audioPath, string outputPath, int captureFps)
     {
         _log.Notice($"Remuxing video from {videoPath} and audio from {audioPath} to {outputPath}...");
@@ -272,10 +217,10 @@ public class ReplayVideoRenderer : IDisposable, IAffinity, ITickable
         string videoOnlyMp4 = Path.Combine(Path.GetDirectoryName(outputPath),
                                            Path.GetFileNameWithoutExtension(outputPath) + "_video.mp4");
 
-        RemuxRawH264ToMp4(videoPath, videoOnlyMp4);
+        _pipe.RemuxRawH264ToMp4(videoPath, videoOnlyMp4);
 
         // audio pass (muxed from ogg)
-        AddAudioToMp4(videoOnlyMp4, audioPath, outputPath);
+        _pipe.AddAudioToMp4(videoOnlyMp4, audioPath, outputPath);
 
         _log.Notice($"Remuxing complete. Final MP4: {outputPath}");
     }
@@ -301,7 +246,6 @@ public class ReplayVideoRenderer : IDisposable, IAffinity, ITickable
         // fail safe to mux just in case we exit early
         RemuxAsync(_unfinishedPath, _songPath, _finishedPath, _fps);
         ClearUnfinishedDirectory();
-        GameObject.Destroy(gcDisabler);
 
         Time.captureDeltaTime = oldCaptureDeltaTime;
         _progressUI.UpdateProgress(1f, "Rendering complete!");
@@ -318,7 +262,7 @@ public class ReplayVideoRenderer : IDisposable, IAffinity, ITickable
                 foreach (var item in Directory.GetFiles(unfinishedDir))
                 {
                     File.Delete(item);
-                }
+              }
             }
             catch (Exception ex)
             {
@@ -329,7 +273,7 @@ public class ReplayVideoRenderer : IDisposable, IAffinity, ITickable
 
     [AffinityPatch(typeof(FlyingScoreSpawner), nameof(FlyingScoreSpawner.SpawnFlyingScoreNextFrame))]
     [AffinityPrefix]
-    public bool DisableFlyingScoreSpawning(FlyingScoreSpawner __instance, IReadonlyCutScoreBuffer cutScoreBuffer, Color color)
+    public bool DisableFlyingScoreSpawnerBug(FlyingScoreSpawner __instance, IReadonlyCutScoreBuffer cutScoreBuffer, Color color)
     {
         __instance.SpawnFlyingScore(cutScoreBuffer, color);
         return false;

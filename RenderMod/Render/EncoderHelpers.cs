@@ -1,5 +1,7 @@
-﻿using System;
+﻿using IPA.Utilities;
+using System;
 using System.Diagnostics;
+using System.IO;
 
 namespace RenderMod.Render
 {
@@ -30,7 +32,7 @@ namespace RenderMod.Render
             {
                 using (var proc = new Process())
                 {
-                    proc.StartInfo.FileName = "ffmpeg";
+                    proc.StartInfo.FileName = Path.Combine(UnityGame.LibraryPath, "ffmpeg.exe");
                     proc.StartInfo.Arguments = "-hide_banner -encoders";
                     proc.StartInfo.RedirectStandardOutput = true;
                     proc.StartInfo.UseShellExecute = false;
@@ -108,18 +110,18 @@ namespace RenderMod.Render
             {
                 case QualityPreset.Low:
                     if (encoder.Contains("nvenc"))
-                        presetArgs = $"-preset p7 -rc vbr_hq -cq 28 {bitrateArg}";
+                        presetArgs = $"-preset fast -rc vbr_hq -cq 28 {bitrateArg}";
                     else if (encoder.Contains("amf"))
                         presetArgs = $"-quality speed -rc vbr -q 28 {bitrateArg}";
                     else if (encoder.Contains("qsv"))
                         presetArgs = $"-preset veryfast -global_quality 30 {bitrateArg}";
-                    else // CPU (libx264)
+                    else
                         presetArgs = $"-preset ultrafast -crf 28 {bitrateArg}";
                     break;
 
                 case QualityPreset.Medium:
                     if (encoder.Contains("nvenc"))
-                        presetArgs = $"-preset p5 -rc vbr_hq -cq 23 {bitrateArg}";
+                        presetArgs = $"-preset medium -rc vbr_hq -cq 23 {bitrateArg}";
                     else if (encoder.Contains("amf"))
                         presetArgs = $"-quality balanced -rc vbr -q 23 {bitrateArg}";
                     else if (encoder.Contains("qsv"))
@@ -130,7 +132,7 @@ namespace RenderMod.Render
 
                 case QualityPreset.High:
                     if (encoder.Contains("nvenc"))
-                        presetArgs = $"-preset p3 -rc vbr_hq -cq 18 {bitrateArg}";
+                        presetArgs = $"-preset slow -rc vbr_hq -cq 18 {bitrateArg}";
                     else if (encoder.Contains("amf"))
                         presetArgs = $"-quality quality -rc vbr -q 18 {bitrateArg}";
                     else if (encoder.Contains("qsv"))

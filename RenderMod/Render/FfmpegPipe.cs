@@ -1,4 +1,6 @@
-﻿using System;
+﻿using IPA.Utilities;
+using ModestTree;
+using System;
 using System.Diagnostics;
 using System.IO;
 using Debug = UnityEngine.Debug;
@@ -12,7 +14,7 @@ public class FFmpegPipe : IDisposable
     public FFmpegPipe(string args)
     {
         ffmpeg = new Process();
-        ffmpeg.StartInfo.FileName = "ffmpeg"; // TODO: make this configurable OR find ffmpeg manually (i should just make it a requirement)
+        ffmpeg.StartInfo.FileName = Path.Combine(UnityGame.LibraryPath, "ffmpeg.exe");
         ffmpeg.StartInfo.Arguments = args;
         ffmpeg.StartInfo.UseShellExecute = false;
         ffmpeg.StartInfo.RedirectStandardInput = true;
@@ -91,6 +93,40 @@ public class FFmpegPipe : IDisposable
         }
 
         ffmpeg.Dispose();
+    }
+
+
+    public void RemuxRawH264ToMp4(string rawH264Path, string outputMp4Path)
+    {
+        var ffm = new Process();
+        ffm.StartInfo.FileName = Path.Combine(UnityGame.LibraryPath, "ffmpeg.exe");
+        ffm.StartInfo.Arguments =
+            $"-y -i \"{rawH264Path}\" " +
+            "-c:v copy " +
+            $"\"{outputMp4Path}\"";
+        ffm.StartInfo.UseShellExecute = false;
+        ffm.StartInfo.CreateNoWindow = true;
+        ffm.Start();
+        ffm.WaitForExit();
+    }
+
+    public void AddAudioToMp4(string videoMp4Path, string audioPath, string finalMp4Path)
+    {
+        if (!File.Exists(audioPath))
+        {
+            return;
+        }
+
+        var ffm = new Process();
+        ffm.StartInfo.FileName = Path.Combine(UnityGame.LibraryPath, "ffmpeg.exe");
+        ffm.StartInfo.Arguments =
+            $"-y -i \"{videoMp4Path}\" -i \"{audioPath}\" -c:v copy -c:a aac -shortest \"{finalMp4Path}\"";
+        ffm.StartInfo.UseShellExecute = false;
+        ffm.StartInfo.CreateNoWindow = true;
+        ffm.Start();
+        ffm.WaitForExit();
+
+        File.Delete(videoMp4Path);
     }
 
     // currently not being binded, but leaving the zenject interface for consistency / just in case i do want to bind this later
