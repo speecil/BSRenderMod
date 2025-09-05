@@ -166,19 +166,12 @@ public class ReplayVideoRenderer : IDisposable, IAffinity, ITickable
             }
         }
 
-        if (_replayCamera == null || !_replayCamera.gameObject.activeInHierarchy)
-        {
-            _log.Error("Replay camera not found or not active.");
-            _replayCamera = Camera.main; // fallback to main camera
-        }
-
         // fuck fuck fuck fuck something wrong
         if (_replayCamera == null)
         {
             _log.Error("Replay camera not found. SOMETHING IS SERIOUSLY WRONG");
             return; 
         }
-
 
         _log.Notice($"Using replay camera: {_replayCamera.name}");
 
