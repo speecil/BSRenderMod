@@ -1,6 +1,4 @@
-﻿using UnityEngine;
-
-namespace RenderMod.Render
+﻿namespace RenderMod.Render
 {
     public enum QualityPreset
     {

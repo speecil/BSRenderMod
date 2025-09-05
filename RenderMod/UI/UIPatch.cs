@@ -1,6 +1,5 @@
 ﻿using BeatSaberMarkupLanguage.Attributes;
 using BeatSaberMarkupLanguage.GameplaySetup;
-using IPA.Config.Data;
 using IPA.Utilities;
 using RenderMod.Render;
 using RenderMod.UI;

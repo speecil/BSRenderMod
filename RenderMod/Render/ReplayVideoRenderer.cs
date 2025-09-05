@@ -183,7 +183,7 @@ public class ReplayVideoRenderer : IDisposable, IAffinity, ITickable
         if (_replayCamera == null)
         {
             _log.Error("Replay camera not found. SOMETHING IS SERIOUSLY WRONG");
-            return; 
+            return;
         }
 
         _log.Notice($"Using replay camera: {_replayCamera.name}");
@@ -215,7 +215,7 @@ public class ReplayVideoRenderer : IDisposable, IAffinity, ITickable
 
         _progressUI.Show();
 
-        _readyToRender = true;    
+        _readyToRender = true;
     }
 
     private unsafe void FlipFrame(NativeArray<byte> src, byte[] dst, int width, int height)
@@ -293,7 +293,7 @@ public class ReplayVideoRenderer : IDisposable, IAffinity, ITickable
                 foreach (var item in Directory.GetFiles(unfinishedDir))
                 {
                     File.Delete(item);
-              }
+                }
             }
             catch (Exception ex)
             {

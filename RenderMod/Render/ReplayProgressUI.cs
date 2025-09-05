@@ -54,7 +54,7 @@ public class ReplayProgressUI
     public void UpdateProgress(float progress01, string message = null)
     {
         if (_progressText == null) return;
-        if(message != null)
+        if (message != null)
         {
             _progressText.text = message;
             return;
