@@ -15,7 +15,7 @@ using static CustomLevelLoader;
 
 public class ReplayVideoRenderer : IDisposable, IAffinity, ITickable
 {
-    [Inject] private BeatmapLevel _beatmapLevel = null;
+    [Inject] private IDifficultyBeatmap _beatmapLevel = null;
     [Inject] private SiraLog _log = null;
     [Inject] private ReplayProgressUI _progressUI = null;
 
@@ -57,17 +57,9 @@ public class ReplayVideoRenderer : IDisposable, IAffinity, ITickable
         _atsc = Resources.FindObjectsOfTypeAll<AudioTimeSyncController>().FirstOrDefault();
         if (_atsc == null) { _log.Error("AudioTimeSyncController not found."); return; }
         if (_beatmapLevel == null) { _log.Error("BeatmapLevel is null."); return; }
-
-        var loader = Resources.FindObjectsOfTypeAll<CustomLevelLoader>().FirstOrDefault();
-        var saveDataDict = loader?.GetField<Dictionary<string, LoadedSaveData>, CustomLevelLoader>("_loadedBeatmapSaveData");
-        if (saveDataDict == null || !saveDataDict.TryGetValue(_beatmapLevel.levelID, out var saveData))
-        {
-            _log.Error($"No save data for {_beatmapLevel.levelID}");
-            return;
-        }
-
+        
         // i swear to god if a mapper puts in a second .ogg or .egg file in the custom level folder, i will cry
-        _songPath = Directory.GetFiles(saveData.customLevelFolderInfo.folderPath)
+        _songPath = Directory.GetFiles(((CustomBeatmapLevel)_beatmapLevel.level).customLevelPath)
                              .FirstOrDefault(x =>
                              {
                                  var l = x.ToLower();
@@ -302,11 +294,13 @@ public class ReplayVideoRenderer : IDisposable, IAffinity, ITickable
         }
     }
 
-    [AffinityPatch(typeof(FlyingScoreSpawner), nameof(FlyingScoreSpawner.SpawnFlyingScoreNextFrame))]
-    [AffinityPrefix]
-    public bool DisableFlyingScoreSpawnerBug(FlyingScoreSpawner __instance, IReadonlyCutScoreBuffer cutScoreBuffer, Color color)
-    {
-        __instance.SpawnFlyingScore(cutScoreBuffer, color);
-        return false;
-    }
+    // not applicable on backport
+
+    //[AffinityPatch(typeof(FlyingScoreSpawner), nameof(FlyingScoreSpawner.SpawnFlyingScoreNextFrame))]
+    //[AffinityPrefix]
+    //public bool DisableFlyingScoreSpawnerBug(FlyingScoreSpawner __instance, IReadonlyCutScoreBuffer cutScoreBuffer, Color color)
+    //{
+    //    __instance.SpawnFlyingScore(cutScoreBuffer, color);
+    //    return false;
+    //}
 }

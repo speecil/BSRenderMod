@@ -14,8 +14,6 @@ namespace RenderMod
 {
     internal class UIPatch : IInitializable, IDisposable
     {
-        [Inject] private GameplaySetup gameplaySetup;
-
         [UIValue("renderEnabled")] private bool renderEnabled = ReplayRenderSettings.RenderEnabled;
         [UIValue("width")] private int width = ReplayRenderSettings.Width;
         [UIValue("height")] private int height = ReplayRenderSettings.Height;
@@ -25,7 +23,7 @@ namespace RenderMod
         [UIValue("extraFFmpegArgs")] private string extraFFmpegArgs = ReplayRenderSettings.ExtraFFmpegArgs;
 
         // presets
-        [UIValue("preset-options")] private List<string> presetOptions = new List<string>() { "Low", "Medium", "High" };
+        [UIValue("preset-options")] private List<object> presetOptions = new List<object>() { "Low", "Medium", "High" };
         [UIValue("preset-option")] private string currentPreset = ReplayRenderSettings.Preset.ToString();
 
         // actions
@@ -83,7 +81,7 @@ namespace RenderMod
 
         public void Initialize()
         {
-            gameplaySetup.AddTab("Render Mod", "RenderMod.UI.RenderModView.bsml", this, MenuType.Solo);
+            BeatSaberMarkupLanguage.GameplaySetup.GameplaySetup.instance.AddTab("Render Mod", "RenderMod.UI.RenderModView.bsml", this, MenuType.Solo);
             var button = Resources.FindObjectsOfTypeAll<StandardLevelDetailView>().FirstOrDefault().GetField<Button, StandardLevelDetailView>("_actionButton");
             if (button == null) return;
             if (button.gameObject.GetComponent<DependantInteractable>() != null) return;
@@ -94,7 +92,7 @@ namespace RenderMod
 
         public void Dispose()
         {
-            gameplaySetup?.RemoveTab("Render Mod");
+            BeatSaberMarkupLanguage.GameplaySetup.GameplaySetup.instance.RemoveTab("Render Mod");
         }
     }
 }

@@ -1,5 +1,5 @@
 <bg xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' xsi:schemaLocation='https://monkeymanboy.github.io/BSML-Docs/ https://monkeymanboy.github.io/BSML-Docs/BSMLSchema.xsd'>
-	<scrollable-settings-container preferred-height='90' child-control-height='true' child-expand-width='true'>
+	<scrollable-settings-container preferred-height='180' child-control-height='true' child-expand-height='true' child-expand-width='true'>
 		<toggle-setting apply-on-change="true" id='render-button' text='Enable Render?' value="renderEnabled" on-change='OnToggleChanged'/>
 		<vertical spacing="2" align="Center" child-control-height="true" child-control-width="true">
 			<!-- Preset Dropdown -->
