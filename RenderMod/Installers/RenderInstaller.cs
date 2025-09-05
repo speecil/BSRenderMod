@@ -13,7 +13,7 @@ namespace RenderMod.Installers
             }
             Container.BindInterfacesAndSelfTo<ReplayVideoRenderer>().AsSingle().NonLazy();
             Container.BindInterfacesAndSelfTo<ReplayProgressUI>().AsSingle().NonLazy();
-            Container.BindInterfacesAndSelfTo<SettingsApplicator>().AsSingle().NonLazy();
+            //Container.BindInterfacesAndSelfTo<SettingsApplicator>().AsSingle().NonLazy();
         }
     }
 }

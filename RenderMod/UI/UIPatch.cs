@@ -1,9 +1,14 @@
 ﻿using BeatSaberMarkupLanguage.Attributes;
 using BeatSaberMarkupLanguage.GameplaySetup;
+using IPA.Config.Data;
+using IPA.Utilities;
 using RenderMod.Render;
+using RenderMod.UI;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
+using UnityEngine.UI;
 using Zenject;
 
 namespace RenderMod
@@ -16,6 +21,7 @@ namespace RenderMod
         [UIValue("width")] private int width = ReplayRenderSettings.Width;
         [UIValue("height")] private int height = ReplayRenderSettings.Height;
         [UIValue("fps")] private int fps = ReplayRenderSettings.FPS;
+        [UIValue("cameraSpecifier")] private string cameraSpecifier = ReplayRenderSettings.SpecifiedCameraName;
         [UIValue("bitrate")] private int bitrate = ReplayRenderSettings.BitrateKbps;
         [UIValue("extraFFmpegArgs")] private string extraFFmpegArgs = ReplayRenderSettings.ExtraFFmpegArgs;
 
@@ -36,6 +42,9 @@ namespace RenderMod
 
         [UIAction("OnFPSChanged")]
         private void OnFPSChanged(int value) => ReplayRenderSettings.FPS = value;
+
+        [UIAction("OnCameraSpecifierChanged")]
+        private void OnCameraSpecifierChanged(string value) => ReplayRenderSettings.SpecifiedCameraName = value;
 
         [UIAction("OnBitrateChanged")]
         private void OnBitrateChanged(int value) => ReplayRenderSettings.BitrateKbps = value;
@@ -76,6 +85,12 @@ namespace RenderMod
         public void Initialize()
         {
             gameplaySetup.AddTab("Render Mod", "RenderMod.UI.RenderModView.bsml", this, MenuType.Solo);
+            var button = Resources.FindObjectsOfTypeAll<StandardLevelDetailView>().FirstOrDefault().GetField<Button, StandardLevelDetailView>("_actionButton");
+            if (button == null) return;
+            if (button.gameObject.GetComponent<DependantInteractable>() != null) return;
+            var x = button.gameObject.AddComponent<DependantInteractable>();
+            x.interactableCheck = () => ReplayRenderSettings.RenderEnabled;
+            x.Dependant = button;
         }
 
         public void Dispose()

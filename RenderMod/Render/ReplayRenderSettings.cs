@@ -18,6 +18,8 @@ namespace RenderMod.Render
         public static int Height = 1080; // TODO: add preset support for 4K, 1440p, instead of increment settings
         public static int FPS = 60; // default FPS for rendering, can be changed to 120 or whatever
 
+        public static string SpecifiedCameraName = "Main"; // Camera2 default camera name is "Main"
+
         // quality
         public static QualityPreset Preset = QualityPreset.Medium; // default preset
         public static int BitrateKbps = 8000; // always respected, regardless of preset

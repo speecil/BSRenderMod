@@ -145,24 +145,37 @@ public class ReplayVideoRenderer : IDisposable, IAffinity, ITickable
     private Quaternion _lastCameraRot;
     private void InitInit()
     {
-        // get the replay camera (bl names theirs, ss doesnt and uses main)
-        foreach (var x in Resources.FindObjectsOfTypeAll<Camera>())
+        List<Camera> cameras = new List<Camera>();
+        cameras.AddRange(Resources.FindObjectsOfTypeAll<Camera>());
+
+        // get the camera2 camera
+        foreach (var x in cameras)
         {
-            _log.Notice($"Camera found: {x.name} (active: {x.gameObject.activeInHierarchy})");
+            _log.Info($"Camera found: {x.name} (active: {x.gameObject.activeInHierarchy})");
             if (x.name == "Cam")
             {
-                if (x.gameObject.transform.parent.name == "Cam2_Main")
+                if (x.gameObject.transform.parent.name == $"Cam2_{ReplayRenderSettings.SpecifiedCameraName}")
                 {
-                    _log.Notice("Found Cam2 Main Camera");
+                    _log.Notice("Found Cam2 Specified Camera: " + x.gameObject.transform.parent.name);
                     _replayCamera = x;
                     break;
                 }
             }
-            // fallback to bl / ss raw cameras
-            if(x.name == "ReplayerViewCamera" || x.name == "RecorderCamera")
+        }
+
+        if (_replayCamera == null)
+        {
+            _log.Notice("Specified camera not found, searching for default replay camera...");
+            // get the replay camera (bl names theirs, ss doesnt and uses main)
+            foreach (var x in cameras)
             {
-                _replayCamera = x;
-                break;
+                // fallback to bl / ss raw cameras
+                if (x.name == "ReplayerViewCamera" || x.name == "RecorderCamera")
+                {
+                    _log.Notice("Found default replay camera: " + x.name);
+                    _replayCamera = x;
+                    break;
+                }
             }
         }
 
