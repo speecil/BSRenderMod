@@ -1,14 +1,20 @@
-﻿using IPA.Utilities;
+﻿using BeatSaberMarkupLanguage;
+using IPA.Utilities;
 using RenderMod.Render;
+using RenderMod.Util;
 using SiraUtil.Affinity;
 using SiraUtil.Logging;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
+using System.Threading;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine;
+using UnityEngine.Networking;
 using UnityEngine.Rendering;
 using Zenject;
 using static CustomLevelLoader;
@@ -18,6 +24,8 @@ public class ReplayVideoRenderer : IDisposable, IAffinity, ITickable
     [Inject] private BeatmapLevel _beatmapLevel = null;
     [Inject] private SiraLog _log = null;
     [Inject] private ReplayProgressUI _progressUI = null;
+
+    [Inject] private readonly IReturnToMenuController _returnToMenuController = null;
 
     private AudioTimeSyncController _atsc = null;
     private Camera _replayCamera = null;
@@ -138,7 +146,15 @@ public class ReplayVideoRenderer : IDisposable, IAffinity, ITickable
 
         _progressUI.UpdateProgress(Mathf.Clamp01(_atsc.songTime / Mathf.Max(0.0001f, _atsc.songLength)));
         frameIndex++;
+
+        // ensure that beatleaders feature to keep the map from exiting doesnt break rendering
+        if (_atsc.songTime >= _atsc.songEndTime) // song ended or within epsilon
+        {
+            _returnToMenuController.ReturnToMenu();
+        }
     }
+
+
 
     float oldCaptureDeltaTime;
 
@@ -183,6 +199,8 @@ public class ReplayVideoRenderer : IDisposable, IAffinity, ITickable
         if (_replayCamera == null)
         {
             _log.Error("Replay camera not found. SOMETHING IS SERIOUSLY WRONG");
+            _log.Error("Contact Speecil");
+            _returnToMenuController.ReturnToMenu();
             return;
         }
 
@@ -214,6 +232,9 @@ public class ReplayVideoRenderer : IDisposable, IAffinity, ITickable
         Time.captureDeltaTime = 1f / _fps;
 
         _progressUI.Show();
+
+        // mute audio whilst rendering video
+        AudioListener.volume = 0f;
 
         _readyToRender = true;
     }
@@ -281,6 +302,8 @@ public class ReplayVideoRenderer : IDisposable, IAffinity, ITickable
         Time.captureDeltaTime = oldCaptureDeltaTime;
         _progressUI.UpdateProgress(1f, "Rendering complete!");
         _progressUI.Hide();
+        AudioListener.volume = 1f;
+        DingPlayer.shouldPlayDing = true;
     }
 
     private void ClearUnfinishedDirectory()

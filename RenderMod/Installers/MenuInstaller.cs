@@ -1,4 +1,6 @@
-﻿using Zenject;
+﻿using RenderMod.UI;
+using RenderMod.Util;
+using Zenject;
 
 namespace RenderMod.Installers
 {
@@ -6,7 +8,11 @@ namespace RenderMod.Installers
     {
         public override void InstallBindings()
         {
+            Container.Bind<RenderSettingsFlow>().FromNewComponentOnNewGameObject().AsSingle();
+            Container.Bind<RenderSettingsView>().FromNewComponentAsViewController().AsSingle();
+            Container.BindInterfacesAndSelfTo<MenuButtonView>().AsSingle();
             Container.BindInterfacesAndSelfTo<UIPatch>().AsSingle();
+            Container.Bind<DingPlayer>().FromNewComponentOnNewGameObject().AsSingle().NonLazy();
         }
     }
 }

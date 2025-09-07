@@ -7,6 +7,9 @@
   "description": "Renders replays to the Renders folder within your game install",
   "gameVersion": "1.40.0",
   "dependsOn": {
-    "BSIPA": "^4.2.0"
+    "BSIPA": "^4.2.0",
+    "SiraUtil": "^3.2.1",
+    "BeatSaberMarkupLanguage": "^1.12.5",
+    "SongCore": "^3.15.3"
   }
 }

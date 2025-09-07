@@ -1,4 +1,5 @@
 ﻿using IPA.Utilities;
+using RenderMod.Render;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -116,10 +117,12 @@ public class FFmpegPipe : IDisposable
             return;
         }
 
+        int audioBitrate = ReplayRenderSettings.AudioBitrateKbps;
+
         var ffm = new Process();
         ffm.StartInfo.FileName = Path.Combine(UnityGame.LibraryPath, "ffmpeg.exe");
         ffm.StartInfo.Arguments =
-            $"-y -i \"{videoMp4Path}\" -i \"{audioPath}\" -c:v copy -c:a aac -shortest \"{finalMp4Path}\"";
+            $"-y -i \"{videoMp4Path}\" -i \"{audioPath}\" -c:v copy -c:a aac -b:a {audioBitrate}k -shortest \"{finalMp4Path}\"";
         ffm.StartInfo.UseShellExecute = false;
         ffm.StartInfo.CreateNoWindow = true;
         ffm.Start();

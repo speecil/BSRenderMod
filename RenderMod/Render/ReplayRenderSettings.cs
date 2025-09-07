@@ -1,4 +1,7 @@
-﻿namespace RenderMod.Render
+﻿using IPA.Utilities;
+using System.IO;
+
+namespace RenderMod.Render
 {
     public enum QualityPreset
     {
@@ -27,16 +30,69 @@
         public static string PixelFormat = "yuv420p";
         public static bool IncludeAudio = true; // unused, always true for now
         public static string AudioCodec = "aac"; // unused, always aac for now
-        public static int AudioBitrateKbps = 320; // unused, always 320 for now
+        public static int AudioBitrateKbps = 320;
 
         // paths
         public static string RenderRoot = "Renders";
 
-        // camera
-        //public static float RenderFOV = 70f;
-        //public static Vector3 RenderOffset = new Vector3(0, 0f, -0.15f);
-
         // advanced
         public static string ExtraFFmpegArgs = ""; // additional arguments for ffmpeg
+
+        static ReplayRenderSettings()
+        {
+            LoadSettings();
+        }
+
+        public static void LoadSettings()
+        {
+            if(!File.Exists(UnityGame.UserDataPath + "/RenderModSettings.json"))
+            {
+                SaveSettings();
+                return;
+            }
+            string jsonText = File.ReadAllText(UnityGame.UserDataPath + "/RenderModSettings.json");
+            Newtonsoft.Json.Linq.JObject settings = Newtonsoft.Json.Linq.JObject.Parse(jsonText);
+            RenderEnabled = settings.Value<bool?>("RenderEnabled") ?? RenderEnabled;
+            Width = settings.Value<int?>("Width") ?? Width;
+            Height = settings.Value<int?>("Height") ?? Height;
+            FPS = settings.Value<int?>("FPS") ?? FPS;
+            SpecifiedCameraName = settings.Value<string>("SpecifiedCameraName") ?? SpecifiedCameraName;
+            string presetStr = settings.Value<string>("Preset") ?? Preset.ToString();
+            if (System.Enum.TryParse<QualityPreset>(presetStr, out QualityPreset parsedPreset))
+            {
+                Preset = parsedPreset;
+            }
+            BitrateKbps = settings.Value<int?>("BitrateKbps") ?? BitrateKbps;
+            VideoCodec = settings.Value<string>("VideoCodec") ?? VideoCodec;
+            PixelFormat = settings.Value<string>("PixelFormat") ?? PixelFormat;
+            IncludeAudio = settings.Value<bool?>("IncludeAudio") ?? IncludeAudio;
+            AudioCodec = settings.Value<string>("AudioCodec") ?? AudioCodec;
+            AudioBitrateKbps = settings.Value<int?>("AudioBitrateKbps") ?? AudioBitrateKbps;
+            RenderRoot = settings.Value<string>("RenderRoot") ?? RenderRoot;
+            ExtraFFmpegArgs = settings.Value<string>("ExtraFFmpegArgs") ?? ExtraFFmpegArgs;
+        }
+
+        public static void SaveSettings()
+        {
+            var settings = new Newtonsoft.Json.Linq.JObject
+            {
+                ["RenderEnabled"] = RenderEnabled,
+                ["Width"] = Width,
+                ["Height"] = Height,
+                ["FPS"] = FPS,
+                ["SpecifiedCameraName"] = SpecifiedCameraName,
+                ["Preset"] = Preset.ToString(),
+                ["BitrateKbps"] = BitrateKbps,
+                ["VideoCodec"] = VideoCodec,
+                ["PixelFormat"] = PixelFormat,
+                ["IncludeAudio"] = IncludeAudio,
+                ["AudioCodec"] = AudioCodec,
+                ["AudioBitrateKbps"] = AudioBitrateKbps,
+                ["RenderRoot"] = RenderRoot,
+                ["ExtraFFmpegArgs"] = ExtraFFmpegArgs
+            };
+            string jsonText = settings.ToString();
+            File.WriteAllText(UnityGame.UserDataPath + "/RenderModSettings.json", jsonText);
+        }
     }
 }

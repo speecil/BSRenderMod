@@ -1,0 +1,55 @@
+<bg xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' xsi:schemaLocation='https://monkeymanboy.github.io/BSML-Docs/ https://monkeymanboy.github.io/BSML-Docs/BSMLSchema.xsd'>
+	<tab-selector tab-tag='tabs'/>
+	<vertical child-align='MiddleCenter' vertical-fit='PreferredSize' preferred-height='50'>
+			<tab tab-name="Quality" tags="tabs">
+			<vertical>
+				<!-- Preset Dropdown -->
+				<text text="Select a quality level" font-size="4" font-style="Bold" align="Center" color="#FFFFFF"/>
+				<dropdown-list-setting id='presetDropdown' value='preset-option' options='preset-options' text='Quality' on-change='OnPresetChanged'/>
+			</vertical>
+		</tab>
+		<!-- Width & Height -->
+		<tab tab-name="Video" tags="tabs">
+			<vertical>
+				<text text="Resolution" font-size="4" font-style="Bold" align="Center" color="#FFFFFF"/>
+				<vertical spacing="2" align="Center">
+					<list-setting apply-on-change="true" on-change="OnResolutionChanged" value="resolution" options="resolution-options" />
+				</vertical>
+
+				<!-- FPS -->
+				<text text="FPS Settings" font-size="4" font-style="Bold" align="Center" color="#FFFFFF"/>
+				<vertical spacing="2" align="Center">
+					<increment-setting text="Render FPS" id="fps" min="30" max="360" increment="10" integer-only="true" apply-on-change="true" value="fps" on-change="OnFPSChanged"/>
+				</vertical>
+
+				<!-- Bitrate -->
+				<text text="Bitrate Settings" font-size="4" font-style="Bold" align="Center" color="#FFFFFF"/>
+				<increment-setting text="Video Bitrate (kbps)" id="bitrate" min="1000" max="50000" increment="500" integer-only="true" apply-on-change="true" value="bitrate" on-change="OnBitrateChanged"/>
+				<increment-setting text="Audio Bitrate (kbps)" id="audioBitrate" min="64" max="320" increment="32" integer-only="true" apply-on-change="true" value="audioBitrate" on-change="OnAudioBitrateChanged"/>
+			</vertical>
+		</tab>
+
+		<tab tab-name="Camera" tags="tabs">
+			<vertical preferred-height='90' child-align='MiddleCenter'>
+				<!-- Camera Settings -->
+				<text text="Camera Settings" font-size="4" font-style="Bold" align="Center" color="#FFFFFF"/>
+				<vertical spacing="2" align="Center">
+					<string-setting text="Camera2 Specifier" id="camera-specifier" value="cameraSpecifier" apply-on-change="true" on-change="OnCameraSpecifierChanged"/>
+				</vertical>
+			</vertical>
+		</tab>
+
+		<tab tab-name="Others" tags="tabs">
+			<vertical>
+				<!-- Extra FFmpeg Args -->
+				<text text="Extra FFmpeg Args" font-size="4" font-style="Bold" align="Center" color="#FFFFFF"/>
+				<string-setting text="Extra FFmpeg Args" id="extra-args" value="extraFFmpegArgs" apply-on-change="true" on-change="OnExtraArgsChanged"/>
+
+				<!-- Encoder Tester -->
+				<text text="Encoder Tester" font-size="4" font-style="Bold" align="Center" color="#FFFFFF"/>
+				<button text="Run Encoder Test" on-click="OnEncoderTestClicked" />
+				<text id="encoder-test-text" text="RESULT: "/>
+			</vertical>
+		</tab>
+	</vertical>
+</bg>
