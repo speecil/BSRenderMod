@@ -164,11 +164,12 @@ public class ReplayVideoRenderer : ILateDisposable, IAffinity, ILateTickable
     {
         List<Camera> cameras = new List<Camera>();
         cameras.AddRange(Resources.FindObjectsOfTypeAll<Camera>());
-
+        _log.Notice("Searching for replay camera with name: " + ReplayRenderSettings.SpecifiedCameraName);
         // get the camera2 camera
         foreach (var x in cameras)
         {
             _log.Info($"Camera found: {x.name} (active: {x.gameObject.activeInHierarchy})");
+            _log.Info($" - Parent: {x.gameObject.transform.parent?.name ?? "null"}");
             if (x.name == "Cam")
             {
                 if (x.gameObject.transform.parent.name == $"Cam2_{ReplayRenderSettings.SpecifiedCameraName}")

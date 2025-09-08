@@ -26,7 +26,30 @@ namespace RenderMod.UI
         [UIComponent("camerawarningText")] private TMPro.TextMeshProUGUI cameraWarningText;
         [UIComponent("otherwarningText")] private TMPro.TextMeshProUGUI otherWarningText;
 
-        [UIValue("resolution")] private string resolution = $"{ReplayRenderSettings.Width}x{ReplayRenderSettings.Height}";
+        [UIValue("resolution")] private string resolution
+        {
+            get
+            {
+                switch (ReplayRenderSettings.Width)
+                {
+                    case (640):
+                        return "360p";
+                    case (854):
+                        return "480p";
+                    case (1280):
+                        return "720p";
+                    case (1920):
+                        return "1080p";
+                    case (2560):
+                        return "1440p";
+                    case (3840):
+                        return "4K";
+                    default:
+                        return $"1080p";
+
+                }
+            }
+        }
         [UIValue("fps")] private int fps = ReplayRenderSettings.FPS;
         [UIValue("camera-option")] private string cameraSpecifier = ReplayRenderSettings.SpecifiedCameraName;
         [UIValue("bitrate")] private int bitrate = ReplayRenderSettings.BitrateKbps;
