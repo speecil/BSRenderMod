@@ -5,7 +5,7 @@
 			<vertical>
 				<!-- Preset Dropdown -->
 				<text text="Select a quality level" font-size="4" font-style="Bold" align="Center" color="#FFFFFF"/>
-				<dropdown-list-setting id='presetDropdown' value='preset-option' options='preset-options' text='Quality' on-change='OnPresetChanged'/>
+				<dropdown-list-setting apply-on-change="true" id='presetDropdown' value='preset-option' options='preset-options' text='Quality' on-change='OnPresetChanged'/>
 				<text id="qualitywarningText" text="" align="Center" active="true" font-size="3" font-color="red" />
 			</vertical>
 			</tab>
@@ -36,7 +36,7 @@
 				<!-- Camera Settings -->
 				<text text="Camera Settings" font-size="4" font-style="Bold" align="Center" color="#FFFFFF"/>
 				<vertical spacing="2" align="Center">
-					<string-setting text="Camera2 Specifier" id="camera-specifier" value="cameraSpecifier" apply-on-change="true" on-change="OnCameraSpecifierChanged"/>
+					<dropdown-list-setting apply-on-change="true" bind-value="true" id='camera-specifier' value='camera-option' options='camera-options' text='Camera2 Specifier' on-change='OnCameraSpecifierChanged'/>
 				</vertical>
 				<text id="camerawarningText" text="" align="Center" active="true" font-size="3" font-color="red" />
 			</vertical>

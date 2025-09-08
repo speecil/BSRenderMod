@@ -2,10 +2,12 @@
 using BeatSaberMarkupLanguage.Attributes;
 using BeatSaberMarkupLanguage.Components;
 using BeatSaberMarkupLanguage.ViewControllers;
+using IPA.Utilities;
 using RenderMod.Render;
 using SiraUtil.Logging;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using Zenject;
 
 
@@ -26,7 +28,7 @@ namespace RenderMod.UI
 
         [UIValue("resolution")] private string resolution = $"{ReplayRenderSettings.Width}x{ReplayRenderSettings.Height}";
         [UIValue("fps")] private int fps = ReplayRenderSettings.FPS;
-        [UIValue("cameraSpecifier")] private string cameraSpecifier = ReplayRenderSettings.SpecifiedCameraName;
+        [UIValue("camera-option")] private string cameraSpecifier = ReplayRenderSettings.SpecifiedCameraName;
         [UIValue("bitrate")] private int bitrate = ReplayRenderSettings.BitrateKbps;
         [UIValue("audioBitrate")] private int audioBitrate = ReplayRenderSettings.AudioBitrateKbps;
         [UIValue("extraFFmpegArgs")] private string extraFFmpegArgs = ReplayRenderSettings.ExtraFFmpegArgs;
@@ -36,13 +38,29 @@ namespace RenderMod.UI
         [UIValue("preset-option")] private string currentPreset = ReplayRenderSettings.Preset.ToString();
         [UIValue("resolution-options")] private List<string> resolutionOptions = new List<string>()
         {
-            "360p",   // 360p
-            "480p",   // 480p
-            "720p",  // 720p
-            "1080p", // 1080p
-            "1440p", // 1440p
-            "4K"  // 4K
+            "360p",
+            "480p",
+            "720p",
+            "1080p",
+            "1440p",
+            "4K"
         };
+
+        List<string> _cameraOptions = new List<string>();
+
+        [UIValue("camera-options")]
+        private List<string> cameraOptions
+        {
+            get
+            {
+                return _cameraOptions;
+            }
+            set
+            {
+                _cameraOptions = value;
+                NotifyPropertyChanged();
+            }
+        }
 
 
         private string FourKWarning = "4K Renders require a lot of processing power and disk space. Ensure your system is capable of handling it.";
@@ -174,6 +192,14 @@ namespace RenderMod.UI
         private List<string> OtherWarnings = new List<string>();
         protected override void DidActivate(bool firstActivation, bool addedToHierarchy, bool screenSystemEnabling)
         {
+            cameraOptions.Clear();
+            List<string> cameras = new List<string>();
+            foreach (var item in Directory.GetFiles(Path.Combine(UnityGame.UserDataPath, "Camera2", "Cameras")))
+            {
+                _log.Notice($"Found camera: {Path.GetFileNameWithoutExtension(item)}");
+                cameras.Add(Path.GetFileNameWithoutExtension(item));
+            }
+            cameraOptions = cameras;
             base.DidActivate(firstActivation, addedToHierarchy, screenSystemEnabling);
             if (firstActivation)
             {
