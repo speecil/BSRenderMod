@@ -19,9 +19,10 @@ using UnityEngine.Rendering;
 using Zenject;
 using static CustomLevelLoader;
 
-public class ReplayVideoRenderer : IDisposable, IAffinity, ITickable
+public class ReplayVideoRenderer : ILateDisposable, IAffinity, ILateTickable
 {
     [Inject] private BeatmapLevel _beatmapLevel = null;
+    [Inject] private BeatmapKey _beatmapKey;
     [Inject] private SiraLog _log = null;
     [Inject] private ReplayProgressUI _progressUI = null;
 
@@ -59,8 +60,6 @@ public class ReplayVideoRenderer : IDisposable, IAffinity, ITickable
         Directory.CreateDirectory(Path.Combine(renderRoot, "Unfinished"));
         Directory.CreateDirectory(Path.Combine(renderRoot, "Finished"));
         var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-        _unfinishedPath = Path.Combine(renderRoot, "Unfinished", $"replay_{timestamp}_raw.h264");
-        _finishedPath = Path.Combine(renderRoot, "Finished", $"replay_{timestamp}.mp4");
 
         _atsc = Resources.FindObjectsOfTypeAll<AudioTimeSyncController>().FirstOrDefault();
         if (_atsc == null) { _log.Error("AudioTimeSyncController not found."); return; }
@@ -81,6 +80,9 @@ public class ReplayVideoRenderer : IDisposable, IAffinity, ITickable
                                  var l = x.ToLower();
                                  return l.EndsWith(".ogg") || l.EndsWith(".egg");
                              });
+
+        _unfinishedPath = Path.Combine(renderRoot, "Unfinished", $"replay_{_beatmapLevel.songName}-{_beatmapKey.difficulty}_{timestamp}_raw.h264");
+        _finishedPath = Path.Combine(renderRoot, "Finished", $"replay_{_beatmapLevel.songName}-{_beatmapKey.difficulty}_{timestamp}.mp4");
 
         _frameBuffers = new byte[BufferCount][];
         for (int i = 0; i < BufferCount; i++)
@@ -104,7 +106,7 @@ public class ReplayVideoRenderer : IDisposable, IAffinity, ITickable
 
     int frameIndex = 0;
     private bool _readyToRender = false;
-    public void Tick()
+    public void LateTick()
     {
         if (!_readyToRender)
         {
@@ -158,7 +160,6 @@ public class ReplayVideoRenderer : IDisposable, IAffinity, ITickable
 
     float oldCaptureDeltaTime;
 
-    private Quaternion _lastCameraRot;
     private void InitInit()
     {
         List<Camera> cameras = new List<Camera>();
@@ -223,10 +224,6 @@ public class ReplayVideoRenderer : IDisposable, IAffinity, ITickable
         _replayCamera.targetTexture = _rt;
         _origProj = _replayCamera.projectionMatrix;
 
-        _lastCameraRot = _replayCamera.transform.rotation;
-
-        int warmupFrames = Mathf.RoundToInt(_fps * 2f);
-
         // get the delta time setup
         oldCaptureDeltaTime = Time.captureDeltaTime;
         Time.captureDeltaTime = 1f / _fps;
@@ -277,8 +274,9 @@ public class ReplayVideoRenderer : IDisposable, IAffinity, ITickable
         _log.Notice($"Remuxing complete. Final MP4: {outputPath}");
     }
 
-    public void Dispose()
+    public void LateDispose()
     {
+        AsyncGPUReadback.WaitAllRequests();
         _readyToRender = false;
         _pipe?.Close();
 

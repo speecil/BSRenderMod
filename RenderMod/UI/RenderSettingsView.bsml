@@ -1,13 +1,14 @@
 <bg xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' xsi:schemaLocation='https://monkeymanboy.github.io/BSML-Docs/ https://monkeymanboy.github.io/BSML-Docs/BSMLSchema.xsd'>
-	<tab-selector tab-tag='tabs'/>
-	<vertical child-align='MiddleCenter' vertical-fit='PreferredSize' preferred-height='50'>
-			<tab tab-name="Quality" tags="tabs">
+	<tab-selector id='tabSelector' tab-tag='tabs'/>
+	<vertical vertical-fit='PreferredSize' preferred-height='60'>
+			<tab tab-name="Quality" tags="tabs" >
 			<vertical>
 				<!-- Preset Dropdown -->
 				<text text="Select a quality level" font-size="4" font-style="Bold" align="Center" color="#FFFFFF"/>
 				<dropdown-list-setting id='presetDropdown' value='preset-option' options='preset-options' text='Quality' on-change='OnPresetChanged'/>
+				<text id="qualitywarningText" text="" align="Center" active="true" font-size="3" font-color="red" />
 			</vertical>
-		</tab>
+			</tab>
 		<!-- Width & Height -->
 		<tab tab-name="Video" tags="tabs">
 			<vertical>
@@ -26,6 +27,7 @@
 				<text text="Bitrate Settings" font-size="4" font-style="Bold" align="Center" color="#FFFFFF"/>
 				<increment-setting text="Video Bitrate (kbps)" id="bitrate" min="1000" max="50000" increment="500" integer-only="true" apply-on-change="true" value="bitrate" on-change="OnBitrateChanged"/>
 				<increment-setting text="Audio Bitrate (kbps)" id="audioBitrate" min="64" max="320" increment="32" integer-only="true" apply-on-change="true" value="audioBitrate" on-change="OnAudioBitrateChanged"/>
+				<text id="videowarningText" text="" align="Center" active="true" font-size="3" font-color="red" />
 			</vertical>
 		</tab>
 
@@ -36,6 +38,7 @@
 				<vertical spacing="2" align="Center">
 					<string-setting text="Camera2 Specifier" id="camera-specifier" value="cameraSpecifier" apply-on-change="true" on-change="OnCameraSpecifierChanged"/>
 				</vertical>
+				<text id="camerawarningText" text="" align="Center" active="true" font-size="3" font-color="red" />
 			</vertical>
 		</tab>
 
@@ -49,6 +52,7 @@
 				<text text="Encoder Tester" font-size="4" font-style="Bold" align="Center" color="#FFFFFF"/>
 				<button text="Run Encoder Test" on-click="OnEncoderTestClicked" />
 				<text id="encoder-test-text" text="RESULT: "/>
+				<text id="otherwarningText" text="" align="Center" active="true" font-size="3" font-color="red" />
 			</vertical>
 		</tab>
 	</vertical>

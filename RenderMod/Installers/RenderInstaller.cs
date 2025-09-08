@@ -1,4 +1,5 @@
 ﻿using RenderMod.Render;
+using SiraUtil.Tools.FPFC;
 using Zenject;
 
 namespace RenderMod.Installers
@@ -7,6 +8,10 @@ namespace RenderMod.Installers
     {
         public override void InstallBindings()
         {
+            if (!Container.HasBinding<IFPFCSettings>())
+            {
+                return;
+            }
             if (!ReplayRenderSettings.RenderEnabled)
             {
                 return;

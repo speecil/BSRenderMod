@@ -1,5 +1,6 @@
 ﻿using RenderMod.UI;
 using RenderMod.Util;
+using SiraUtil.Tools.FPFC;
 using Zenject;
 
 namespace RenderMod.Installers
@@ -8,6 +9,10 @@ namespace RenderMod.Installers
     {
         public override void InstallBindings()
         {
+            if (!Container.HasBinding<IFPFCSettings>())
+            {
+                return;
+            }
             Container.Bind<RenderSettingsFlow>().FromNewComponentOnNewGameObject().AsSingle();
             Container.Bind<RenderSettingsView>().FromNewComponentAsViewController().AsSingle();
             Container.BindInterfacesAndSelfTo<MenuButtonView>().AsSingle();
