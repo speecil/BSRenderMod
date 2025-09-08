@@ -112,7 +112,7 @@ namespace RenderMod.Render
                     if (encoder.Contains("nvenc"))
                         presetArgs = $"-preset fast -rc vbr_hq -cq 28 {bitrateArg}";
                     else if (encoder.Contains("amf"))
-                        presetArgs = $"-quality speed -rc vbr -q 28 {bitrateArg}";
+                        presetArgs = $"-quality speed -q 28 {bitrateArg}";
                     else if (encoder.Contains("qsv"))
                         presetArgs = $"-preset veryfast -global_quality 30 {bitrateArg}";
                     else
@@ -123,7 +123,7 @@ namespace RenderMod.Render
                     if (encoder.Contains("nvenc"))
                         presetArgs = $"-preset medium -rc vbr_hq -cq 23 {bitrateArg}";
                     else if (encoder.Contains("amf"))
-                        presetArgs = $"-quality balanced -rc vbr -q 23 {bitrateArg}";
+                        presetArgs = $"-quality balanced -q 23 {bitrateArg}";
                     else if (encoder.Contains("qsv"))
                         presetArgs = $"-preset medium -global_quality 25 {bitrateArg}";
                     else
@@ -134,7 +134,7 @@ namespace RenderMod.Render
                     if (encoder.Contains("nvenc"))
                         presetArgs = $"-preset slow -rc vbr_hq -cq 18 {bitrateArg}";
                     else if (encoder.Contains("amf"))
-                        presetArgs = $"-quality quality -rc vbr -q 18 {bitrateArg}";
+                        presetArgs = $"-quality quality -q 18 {bitrateArg}";
                     else if (encoder.Contains("qsv"))
                         presetArgs = $"-preset slow -global_quality 20 {bitrateArg}";
                     else
