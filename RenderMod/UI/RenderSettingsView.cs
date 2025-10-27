@@ -1,6 +1,7 @@
 ﻿using BeatSaberMarkupLanguage;
 using BeatSaberMarkupLanguage.Attributes;
 using BeatSaberMarkupLanguage.Components;
+using BeatSaberMarkupLanguage.Components.Settings;
 using BeatSaberMarkupLanguage.ViewControllers;
 using IPA.Utilities;
 using RenderMod.Render;
@@ -108,14 +109,14 @@ namespace RenderMod.UI
             "4K"
         };
 
-        List<string> _cameraOptions = new List<string>();
+        List<object> _cameraOptions = new object[] { }.ToList();
 
         [UIValue("camera-options")]
-        private List<string> cameraOptions
+        private List<object> cameraOptions
         {
             get
             {
-                return _cameraOptions;
+                return _cameraOptions.ToList();
             }
             set
             {
@@ -123,6 +124,9 @@ namespace RenderMod.UI
                 NotifyPropertyChanged();
             }
         }
+
+        [UIComponent("camera-specifier")]
+        private DropDownListSetting cameraSpecifierDropDown;
 
 
         private string FourKWarning = "4K Renders require a lot of processing power and disk space. Ensure your system is capable of handling it.";
@@ -254,15 +258,19 @@ namespace RenderMod.UI
         protected override void DidActivate(bool firstActivation, bool addedToHierarchy, bool screenSystemEnabling)
         {
             cameraOptions.Clear();
-            List<string> cameras = new List<string>();
+            List<object> cameras = new List<object>();
             var Cameras = CameraUtils.Core.CamerasManager.GetRegisteredCameras().Select(x => x.Camera).ToList();
             foreach (var cam in Cameras)
             {
                 string camName = cam.transform.GetObjectPath(2); // just get object and its parent
                 cameras.Add(camName);
             }   
-            cameraOptions = cameras;
             base.DidActivate(firstActivation, addedToHierarchy, screenSystemEnabling);
+            cameraOptions = cameras.ToList();
+            cameraSpecifierDropDown.Values = cameraOptions;
+            cameraSpecifierDropDown.Value = ReplayRenderSettings.SpecifiedCameraName;
+            cameraSpecifierDropDown.UpdateChoices();
+
             if (firstActivation)
             {
                 tabSelector.TextSegmentedControl.didSelectCellEvent += (segmentedControl, cell) =>
