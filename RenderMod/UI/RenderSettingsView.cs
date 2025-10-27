@@ -1,17 +1,13 @@
-﻿using BeatSaberMarkupLanguage;
-using BeatSaberMarkupLanguage.Attributes;
+﻿using BeatSaberMarkupLanguage.Attributes;
 using BeatSaberMarkupLanguage.Components;
 using BeatSaberMarkupLanguage.Components.Settings;
 using BeatSaberMarkupLanguage.ViewControllers;
-using IPA.Utilities;
 using RenderMod.Render;
 using RenderMod.Util;
 using SiraUtil.Logging;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using UnityEngine;
 using Zenject;
 
 namespace RenderMod.UI
@@ -117,6 +113,7 @@ namespace RenderMod.UI
         private void OnCameraSpecifierChanged(string value)
         {
             ReplayRenderSettings.SpecifiedCameraName = value;
+            UpdateWarnings();
         }
 
         [UIAction("OnBitrateChanged")]
@@ -131,6 +128,7 @@ namespace RenderMod.UI
         private void OnAudioBitrateChanged(int value)
         {
             ReplayRenderSettings.AudioBitrateKbps = value;
+            UpdateWarnings();
         }
 
         [UIAction("OnExtraArgsChanged")]

@@ -1,11 +1,6 @@
 ﻿using CameraUtils.Core;
 using RenderMod.Util;
 using SiraUtil.Logging;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using UnityEngine;
 
 namespace RenderMod.Render
@@ -44,7 +39,7 @@ namespace RenderMod.Render
             //_siraLog.Info($"Render Enabled: {ReplayRenderSettings.RenderEnabled}");
             //_siraLog.Info($"Specified Camera Name: {ReplayRenderSettings.SpecifiedCameraName}");
             //_siraLog.Info($"Camera Path Contains Specified Name: {registeredCamera.Camera.transform.GetObjectPath(int.MaxValue).Contains(ReplayRenderSettings.SpecifiedCameraName)}");
-            return registeredCamera.CameraFlags != CameraFlags.Mirror  && registeredCamera.Camera.transform.GetObjectPath(int.MaxValue).Contains(ReplayRenderSettings.SpecifiedCameraName);
+            return registeredCamera.CameraFlags != CameraFlags.Mirror && registeredCamera.Camera.transform.GetObjectPath(int.MaxValue).Contains(ReplayRenderSettings.SpecifiedCameraName);
         }
     }
 }

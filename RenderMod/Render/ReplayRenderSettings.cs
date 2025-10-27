@@ -45,7 +45,7 @@ namespace RenderMod.Render
 
         public static void LoadSettings()
         {
-            if(!File.Exists(UnityGame.UserDataPath + "/RenderModSettings.json"))
+            if (!File.Exists(UnityGame.UserDataPath + "/RenderModSettings.json"))
             {
                 SaveSettings();
                 return;

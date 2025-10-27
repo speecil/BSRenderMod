@@ -18,7 +18,7 @@ namespace RenderMod
             {
                 return; // this mod is only usable in fpfc (do you really want to kill your gpu that badly?)
             }
-            if(!File.Exists(Path.Combine(UnityGame.LibraryPath, "ffmpeg.exe")))
+            if (!File.Exists(Path.Combine(UnityGame.LibraryPath, "ffmpeg.exe")))
             {
                 logger.Error("ffmpeg.exe not found in the game directory! Exiting!");
                 return;

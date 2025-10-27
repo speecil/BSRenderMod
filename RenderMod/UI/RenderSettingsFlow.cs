@@ -1,12 +1,6 @@
-﻿using BeatSaberMarkupLanguage;
-using HMUI;
+﻿using HMUI;
 using IPA.Utilities;
 using RenderMod.Render;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Zenject;
 
 namespace RenderMod.UI

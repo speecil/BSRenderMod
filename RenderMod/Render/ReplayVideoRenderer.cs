@@ -1,20 +1,15 @@
-﻿using BeatSaberMarkupLanguage;
-using IPA.Utilities;
+﻿using IPA.Utilities;
 using RenderMod.Render;
 using RenderMod.Util;
 using SiraUtil.Affinity;
 using SiraUtil.Logging;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection;
-using System.Threading;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine;
-using UnityEngine.Networking;
 using UnityEngine.Rendering;
 using Zenject;
 using static CustomLevelLoader;
@@ -155,8 +150,6 @@ public class ReplayVideoRenderer : ILateDisposable, IAffinity, ILateTickable
             _returnToMenuController.ReturnToMenu();
         }
     }
-
-
 
     float oldCaptureDeltaTime;
 
