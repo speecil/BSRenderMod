@@ -1,20 +1,20 @@
 <bg xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' xsi:schemaLocation='https://monkeymanboy.github.io/BSML-Docs/ https://monkeymanboy.github.io/BSML-Docs/BSMLSchema.xsd'>
 	<tab-selector id='tabSelector' tab-tag='tabs'/>
-	<vertical vertical-fit='PreferredSize' preferred-height='60'>
+	<vertical vertical-fit='PreferredSize' horizontal-fit='PreferredSize' preferred-height='60'>
 			<tab tab-name="Quality" tags="tabs" >
-			<vertical>
-				<!-- Preset Dropdown -->
-				<text text="Select a quality level" font-size="4" font-style="Bold" align="Center" color="#FFFFFF"/>
-				<dropdown-list-setting bind-value="true" apply-on-change="true" id='presetDropdown' value='preset-option' options='preset-options' text='Quality' on-change='OnPresetChanged'/>
-				<text id="qualitywarningText" text="" align="Center" active="true" font-size="3" font-color="red" />
-			</vertical>
+				<vertical>
+					<!-- Preset Dropdown -->
+					<text text="Select a quality level" font-size="4" font-style="Bold" align="Center" color="#FFFFFF"/>
+					<dropdown-list-setting bind-value="true" apply-on-change="true" id='presetDropdown' value='preset-option' options='preset-options' text='Quality' on-change='OnPresetChanged'/>
+					<text id="qualitywarningText" text="" align="Center" active="true" font-size="3" font-color="red" />
+				</vertical>
 			</tab>
 		<!-- Width & Height -->
 		<tab tab-name="Video" tags="tabs">
 			<vertical>
 				<text text="Resolution" font-size="4" font-style="Bold" align="Center" color="#FFFFFF"/>
 				<vertical spacing="2" align="Center">
-					<list-setting bind-value="true" apply-on-change="true" on-change="OnResolutionChanged" value="resolution" options="resolution-options" />
+					<list-setting text="Resolution" bind-value="true" apply-on-change="true" on-change="OnResolutionChanged" value="resolution" options="resolution-options" />
 				</vertical>
 
 				<!-- FPS -->
@@ -34,9 +34,9 @@
 		<tab tab-name="Camera" tags="tabs">
 			<vertical preferred-height='90' child-align='MiddleCenter'>
 				<!-- Camera Settings -->
-				<text text="Camera Settings" font-size="4" font-style="Bold" align="Center" color="#FFFFFF"/>
-				<vertical spacing="2" align="Center">
-					<dropdown-list-setting apply-on-change="true" bind-value="true" id='camera-specifier' value='camera-option' options='camera-options' text='Camera2 Specifier' on-change='OnCameraSpecifierChanged'/>
+				<text text="Camera Specifier" font-size="4" font-style="Bold" align="Center" color="#FFFFFF"/>
+				<vertical spacing="2" align="Center" size-delta-x="90">
+					<dropdown-list-setting size-delta-x="90" size-delta-y="-15" apply-on-change="true" bind-value="true" id='camera-specifier' value='camera-option' options='camera-options' text='' on-change='OnCameraSpecifierChanged'/>
 				</vertical>
 				<text id="camerawarningText" text="" align="Center" active="true" font-size="3" font-color="red" />
 			</vertical>
