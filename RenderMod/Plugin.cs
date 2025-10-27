@@ -24,6 +24,7 @@ namespace RenderMod
                 return;
             }
             zenjector.UseLogger(logger);
+            zenjector.Install<Installers.AppInstaller>(Location.App);
             zenjector.Install<Installers.MenuInstaller>(Location.Menu);
             zenjector.Install<Installers.RenderInstaller>(Location.GameCore);
         }

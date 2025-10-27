@@ -25,7 +25,7 @@ namespace RenderMod.Util
         {
             shouldPlayDing = false;
             float previousVolume = AudioListener.volume;
-            AudioListener.volume = 1f;
+            AudioListener.volume = 0.75f;
 
             byte[] dingData = Utilities.GetResource(Assembly.GetExecutingAssembly(), "RenderMod.UI.Ding.ogg");
 

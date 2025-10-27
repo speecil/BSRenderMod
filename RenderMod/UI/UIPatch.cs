@@ -19,13 +19,18 @@ namespace RenderMod
         [Inject] private GameplaySetup gameplaySetup;
         [Inject] private readonly RenderSettingsFlow renderSettingsVFlow;
 
+        private Button _actionButton;
+
         [UIValue("renderEnabled")] private bool renderEnabled = ReplayRenderSettings.RenderEnabled;
 
         [UIAction("OnToggleChanged")]
         private void OnToggleChanged(bool value)
         {
             ReplayRenderSettings.RenderEnabled = value;
-            daPatch(Resources.FindObjectsOfTypeAll<StandardLevelDetailView>().FirstOrDefault());
+            if (_actionButton != null)
+            {
+                _actionButton.interactable = !value;
+            }
         }
 
         [UIAction("OpenSettings")]
@@ -35,7 +40,6 @@ namespace RenderMod
         }
 
         // lifecycle methods
-
         public void Initialize()
         {
             gameplaySetup.AddTab("Render Mod", "RenderMod.UI.RenderModView.bsml", this, MenuType.Solo);
@@ -51,14 +55,9 @@ namespace RenderMod
         public void daPatch(StandardLevelDetailView __instance)
         {
             var button = __instance.GetField<Button, StandardLevelDetailView>("_actionButton");
-            if (button == null) return;
-            if (__instance.beatmapKey.levelId.Contains("WIP"))
-            {
-                button.interactable = false;
-                return; // dont fw it broski
-            }
-
-            button.interactable = !ReplayRenderSettings.RenderEnabled;
+            _actionButton = button;
+            if (_actionButton == null) return;
+            _actionButton.interactable = !ReplayRenderSettings.RenderEnabled;
         }
     }
 }

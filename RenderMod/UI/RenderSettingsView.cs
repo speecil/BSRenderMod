@@ -4,10 +4,13 @@ using BeatSaberMarkupLanguage.Components;
 using BeatSaberMarkupLanguage.ViewControllers;
 using IPA.Utilities;
 using RenderMod.Render;
+using RenderMod.Util;
 using SiraUtil.Logging;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using UnityEngine;
 using Zenject;
 
 
@@ -48,6 +51,42 @@ namespace RenderMod.UI
                         return $"1080p";
 
                 }
+            }
+            set
+            {
+                switch (value)
+                {
+                    case "360p":
+                        ReplayRenderSettings.Width = 640;
+                        ReplayRenderSettings.Height = 360;
+                        break;
+                    case "480p":
+                        ReplayRenderSettings.Width = 854;
+                        ReplayRenderSettings.Height = 480;
+                        break;
+                    case "720p":
+                        ReplayRenderSettings.Width = 1280;
+                        ReplayRenderSettings.Height = 720;
+                        break;
+                    case "1080p":
+                        ReplayRenderSettings.Width = 1920;
+                        ReplayRenderSettings.Height = 1080;
+                        break;
+                    case "1440p":
+                        ReplayRenderSettings.Width = 2560;
+                        ReplayRenderSettings.Height = 1440;
+                        break;
+                    case "4K":
+                        ReplayRenderSettings.Width = 3840;
+                        ReplayRenderSettings.Height = 2160;
+                        break;
+                    default:
+                        _log.Warn($"Unknown resolution option: {value}, defaulting to 1080p");
+                        ReplayRenderSettings.Width = 1920;
+                        ReplayRenderSettings.Height = 1080;
+                        break;
+                }
+                ReplayRenderSettings.SaveSettings();
             }
         }
         [UIValue("fps")] private int fps = ReplayRenderSettings.FPS;
@@ -208,7 +247,6 @@ namespace RenderMod.UI
             }
         }
 
-
         private List<string> QualityWarnings = new List<string>();
         private List<string> VideoWarnings = new List<string>();
         private List<string> CameraWarnings = new List<string>();
@@ -217,11 +255,12 @@ namespace RenderMod.UI
         {
             cameraOptions.Clear();
             List<string> cameras = new List<string>();
-            foreach (var item in Directory.GetFiles(Path.Combine(UnityGame.UserDataPath, "Camera2", "Cameras")))
+            var Cameras = CameraUtils.Core.CamerasManager.GetRegisteredCameras().Select(x => x.Camera).ToList();
+            foreach (var cam in Cameras)
             {
-                _log.Notice($"Found camera: {Path.GetFileNameWithoutExtension(item)}");
-                cameras.Add(Path.GetFileNameWithoutExtension(item));
-            }
+                string camName = cam.transform.GetObjectPath(2); // just get object and its parent
+                cameras.Add(camName);
+            }   
             cameraOptions = cameras;
             base.DidActivate(firstActivation, addedToHierarchy, screenSystemEnabling);
             if (firstActivation)
