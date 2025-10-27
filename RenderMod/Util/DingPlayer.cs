@@ -1,16 +1,11 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
-using UnityEngine.Networking;
-using UnityEngine;
-using BeatSaberMarkupLanguage;
-using Zenject;
+﻿using BeatSaberMarkupLanguage;
 using SiraUtil.Logging;
+using System.Collections;
+using System.IO;
+using System.Reflection;
+using UnityEngine;
+using UnityEngine.Networking;
+using Zenject;
 
 namespace RenderMod.Util
 {
@@ -25,7 +20,7 @@ namespace RenderMod.Util
         {
             shouldPlayDing = false;
             float previousVolume = AudioListener.volume;
-            AudioListener.volume = 1f;
+            AudioListener.volume = 0.75f;
 
             byte[] dingData = Utilities.GetResource(Assembly.GetExecutingAssembly(), "RenderMod.UI.Ding.ogg");
 

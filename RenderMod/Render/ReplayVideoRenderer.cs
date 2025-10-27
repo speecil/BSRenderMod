@@ -1,20 +1,15 @@
-﻿using BeatSaberMarkupLanguage;
-using IPA.Utilities;
+﻿using IPA.Utilities;
 using RenderMod.Render;
 using RenderMod.Util;
 using SiraUtil.Affinity;
 using SiraUtil.Logging;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection;
-using System.Threading;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine;
-using UnityEngine.Networking;
 using UnityEngine.Rendering;
 using Zenject;
 using static CustomLevelLoader;
@@ -25,8 +20,8 @@ public class ReplayVideoRenderer : ILateDisposable, IAffinity, ILateTickable
     [Inject] private BeatmapKey _beatmapKey;
     [Inject] private SiraLog _log = null;
     [Inject] private ReplayProgressUI _progressUI = null;
-
     [Inject] private readonly IReturnToMenuController _returnToMenuController = null;
+    [Inject] private readonly EffectManager _effectManager = null;
 
     private AudioTimeSyncController _atsc = null;
     private Camera _replayCamera = null;
@@ -156,57 +151,11 @@ public class ReplayVideoRenderer : ILateDisposable, IAffinity, ILateTickable
         }
     }
 
-
-
     float oldCaptureDeltaTime;
 
     private void InitInit()
     {
-        List<Camera> cameras = new List<Camera>();
-        cameras.AddRange(Resources.FindObjectsOfTypeAll<Camera>());
-        _log.Notice("Searching for replay camera with name: " + ReplayRenderSettings.SpecifiedCameraName);
-        // get the camera2 camera
-        foreach (var x in cameras)
-        {
-            _log.Info($"Camera found: {x.name} (active: {x.gameObject.activeInHierarchy})");
-            _log.Info($" - Parent: {x.gameObject.transform.parent?.name ?? "null"}");
-            if (x.name == "Cam")
-            {
-                if (x.gameObject.transform.parent.name == $"Cam2_{ReplayRenderSettings.SpecifiedCameraName}")
-                {
-                    _log.Notice("Found Cam2 Specified Camera: " + x.gameObject.transform.parent.name);
-                    _replayCamera = x;
-                    break;
-                }
-            }
-        }
-
-        if (_replayCamera == null)
-        {
-            _log.Notice("Specified camera not found, searching for default replay camera...");
-            // get the replay camera (bl names theirs, ss doesnt and uses main)
-            foreach (var x in cameras)
-            {
-                // fallback to bl / ss raw cameras
-                if (x.name == "ReplayerViewCamera" || x.name == "RecorderCamera")
-                {
-                    _log.Notice("Found default replay camera: " + x.name);
-                    _replayCamera = x;
-                    break;
-                }
-            }
-        }
-
-        // fuck fuck fuck fuck something wrong
-        if (_replayCamera == null)
-        {
-            _log.Error("Replay camera not found. SOMETHING IS SERIOUSLY WRONG");
-            _log.Error("Contact Speecil");
-            _returnToMenuController.ReturnToMenu();
-            return;
-        }
-
-        _log.Notice($"Using replay camera: {_replayCamera.name}");
+        _replayCamera = _effectManager.RenderCameraEffect.FoundCamera;
 
         _replayCamera.enabled = true;
 

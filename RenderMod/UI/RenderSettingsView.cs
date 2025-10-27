@@ -1,15 +1,14 @@
-﻿using BeatSaberMarkupLanguage;
-using BeatSaberMarkupLanguage.Attributes;
+﻿using BeatSaberMarkupLanguage.Attributes;
 using BeatSaberMarkupLanguage.Components;
+using BeatSaberMarkupLanguage.Components.Settings;
 using BeatSaberMarkupLanguage.ViewControllers;
-using IPA.Utilities;
 using RenderMod.Render;
+using RenderMod.Util;
 using SiraUtil.Logging;
 using System;
 using System.Collections.Generic;
-using System.IO;
+using System.Linq;
 using Zenject;
-
 
 namespace RenderMod.UI
 {
@@ -20,180 +19,139 @@ namespace RenderMod.UI
         [Inject] private SiraLog _log;
 
         [UIComponent("tabSelector")] private TabSelector tabSelector;
-
         [UIComponent("qualitywarningText")] private TMPro.TextMeshProUGUI qualityWarningText;
         [UIComponent("videowarningText")] private TMPro.TextMeshProUGUI videoWarningText;
         [UIComponent("camerawarningText")] private TMPro.TextMeshProUGUI cameraWarningText;
         [UIComponent("otherwarningText")] private TMPro.TextMeshProUGUI otherWarningText;
 
-        [UIValue("resolution")] private string resolution
+        [UIValue("resolution")]
+        private string resolution
         {
             get
             {
                 switch (ReplayRenderSettings.Width)
                 {
-                    case (640):
-                        return "360p";
-                    case (854):
-                        return "480p";
-                    case (1280):
-                        return "720p";
-                    case (1920):
-                        return "1080p";
-                    case (2560):
-                        return "1440p";
-                    case (3840):
-                        return "4K";
+                    case 640 when ReplayRenderSettings.Height == 360: return "360p";
+                    case 854 when ReplayRenderSettings.Height == 480: return "480p";
+                    case 1280 when ReplayRenderSettings.Height == 720: return "720p";
+                    case 1920 when ReplayRenderSettings.Height == 1080: return "1080p";
+                    case 2560 when ReplayRenderSettings.Height == 1440: return "1440p";
+                    case 3840 when ReplayRenderSettings.Height == 2160: return "4K";
                     default:
-                        return $"1080p";
-
+                        _log.Warn($"Unknown resolution setting: {ReplayRenderSettings.Width}x{ReplayRenderSettings.Height}, defaulting to 1080p");
+                        return "1080p";
+                };
+            }
+            set
+            {
+                switch (value)
+                {
+                    case "360p": ReplayRenderSettings.Width = 640; ReplayRenderSettings.Height = 360; break;
+                    case "480p": ReplayRenderSettings.Width = 854; ReplayRenderSettings.Height = 480; break;
+                    case "720p": ReplayRenderSettings.Width = 1280; ReplayRenderSettings.Height = 720; break;
+                    case "1080p": ReplayRenderSettings.Width = 1920; ReplayRenderSettings.Height = 1080; break;
+                    case "1440p": ReplayRenderSettings.Width = 2560; ReplayRenderSettings.Height = 1440; break;
+                    case "4K": ReplayRenderSettings.Width = 3840; ReplayRenderSettings.Height = 2160; break;
+                    default:
+                        _log.Warn($"Unknown resolution option: {value}, defaulting to 1080p");
+                        ReplayRenderSettings.Width = 1920;
+                        ReplayRenderSettings.Height = 1080;
+                        break;
                 }
+                ReplayRenderSettings.SaveSettings();
+                UpdateWarnings();
             }
         }
+
         [UIValue("fps")] private int fps = ReplayRenderSettings.FPS;
         [UIValue("camera-option")] private string cameraSpecifier = ReplayRenderSettings.SpecifiedCameraName;
         [UIValue("bitrate")] private int bitrate = ReplayRenderSettings.BitrateKbps;
         [UIValue("audioBitrate")] private int audioBitrate = ReplayRenderSettings.AudioBitrateKbps;
         [UIValue("extraFFmpegArgs")] private string extraFFmpegArgs = ReplayRenderSettings.ExtraFFmpegArgs;
 
-        // presets
         [UIValue("preset-options")] private List<string> presetOptions = new List<string>() { "Low", "Medium", "High" };
         [UIValue("preset-option")] private string currentPreset = ReplayRenderSettings.Preset.ToString();
-        [UIValue("resolution-options")] private List<string> resolutionOptions = new List<string>()
+        [UIValue("resolution-options")]
+        private List<string> resolutionOptions = new List<string>()
         {
-            "360p",
-            "480p",
-            "720p",
-            "1080p",
-            "1440p",
-            "4K"
+            "360p", "480p", "720p", "1080p", "1440p", "4K"
         };
 
-        List<string> _cameraOptions = new List<string>();
+        private List<object> _cameraOptions = new List<object>();
 
         [UIValue("camera-options")]
-        private List<string> cameraOptions
+        private List<object> cameraOptions
         {
-            get
-            {
-                return _cameraOptions;
-            }
-            set
-            {
-                _cameraOptions = value;
-                NotifyPropertyChanged();
-            }
+            get => _cameraOptions.ToList();
+            set { _cameraOptions = value; NotifyPropertyChanged(); }
         }
 
+        [UIComponent("camera-specifier")] private DropDownListSetting cameraSpecifierDropDown;
 
-        private string FourKWarning = "4K Renders require a lot of processing power and disk space. Ensure your system is capable of handling it.";
+        private readonly string FourKWarning = "4K renders require significant processing power and disk space.";
+        private readonly string FPSWarning = "High FPS values increase file size and CPU usage.";
+        private readonly string BitrateWarning = "Bitrates over 10,000 kbps may cause instability or lag.";
+        private readonly string ExtraArgsWarning = "Extra FFmpeg arguments can cause instability or crashes.";
+        private readonly string PresetWarning = "High Quality preset uses substantial storage and processing.";
+        private readonly string NonMainCameraWarning = "Camera is not called \"Main\". Ensure this is the correct camera.";
+
         [UIAction("OnResolutionChanged")]
         private void OnResolutionChanged(string value)
         {
-            VideoWarnings.Remove(FourKWarning);
-            switch (value)
-            {
-                case "360p":
-                    ReplayRenderSettings.Width = 640;
-                    ReplayRenderSettings.Height = 360;
-                    break;
-                case "480p":
-                    ReplayRenderSettings.Width = 854;
-                    ReplayRenderSettings.Height = 480;
-                    break;
-                case "720p":
-                    ReplayRenderSettings.Width = 1280;
-                    ReplayRenderSettings.Height = 720;
-                    break;
-                case "1080p":
-                    ReplayRenderSettings.Width = 1920;
-                    ReplayRenderSettings.Height = 1080;
-                    break;
-                case "1440p":
-                    ReplayRenderSettings.Width = 2560;
-                    ReplayRenderSettings.Height = 1440;
-                    break;
-                case "4K":
-                    ReplayRenderSettings.Width = 3840;
-                    ReplayRenderSettings.Height = 2160;
-                    if (!VideoWarnings.Contains(FourKWarning))
-                        VideoWarnings.Add(FourKWarning);
-                    break;
-                default:
-                    _log.Warn($"Unknown resolution option: {value}, defaulting to 1080p");
-                    ReplayRenderSettings.Width = 1920;
-                    ReplayRenderSettings.Height = 1080;
-                    break;
-            }
-            UpdateWarnings();
+            resolution = value;
         }
 
-        private string FPSWarning = "Higher FPS values require more processing power and will result in larger file sizes. Ensure your system is capable of handling it.";
         [UIAction("OnFPSChanged")]
         private void OnFPSChanged(int value)
         {
-            VideoWarnings.Remove(FPSWarning);
             ReplayRenderSettings.FPS = value;
-            if(value > 60)
-            {
-                VideoWarnings.Add(FPSWarning);
-            }
+            fps = value;
             UpdateWarnings();
         }
 
         [UIAction("OnCameraSpecifierChanged")]
-        private void OnCameraSpecifierChanged(string value) => ReplayRenderSettings.SpecifiedCameraName = value;
+        private void OnCameraSpecifierChanged(string value)
+        {
+            ReplayRenderSettings.SpecifiedCameraName = value;
+            UpdateWarnings();
+        }
 
-        private string BitrateWarning = "Bitrate values higher than 10000kbps require more processing power. Ensure your system is capable of handling it.";
         [UIAction("OnBitrateChanged")]
         private void OnBitrateChanged(int value)
         {
-            VideoWarnings.Remove(BitrateWarning);
-            if (value > 10000)
-            {
-                VideoWarnings.Add(BitrateWarning);
-            }
             ReplayRenderSettings.BitrateKbps = value;
+            bitrate = value;
             UpdateWarnings();
         }
 
         [UIAction("OnAudioBitrateChanged")]
-        private void OnAudioBitrateChanged(int value) => ReplayRenderSettings.AudioBitrateKbps = value;
-
-        private string ExtraArgsWarning = "Using certain FFmpeg arguments can cause instability or crashes. Ensure you know what you're doing.";
-        [UIAction("OnExtraArgsChanged")]
-        private void OnExtraArgsChanged(string value)
+        private void OnAudioBitrateChanged(int value)
         {
-            OtherWarnings.Remove(ExtraArgsWarning);
-            if(!string.IsNullOrEmpty(value))
-            {
-                OtherWarnings.Add(ExtraArgsWarning);
-            }
-            ReplayRenderSettings.ExtraFFmpegArgs = value;
+            ReplayRenderSettings.AudioBitrateKbps = value;
             UpdateWarnings();
         }
 
-        private string PresetWarning = "High Quality will use a lot of storage space and processing. Ensure your system can handle it.";
+        [UIAction("OnExtraArgsChanged")]
+        private void OnExtraArgsChanged(string value)
+        {
+            ReplayRenderSettings.ExtraFFmpegArgs = value;
+            extraFFmpegArgs = value;
+            UpdateWarnings();
+        }
+
         [UIAction("OnPresetChanged")]
         private void OnPresetChanged(string value)
         {
-            QualityWarnings.Remove(PresetWarning);
             if (Enum.TryParse(value, out QualityPreset preset))
             {
-                if(preset == QualityPreset.High)
-                {
-                    QualityWarnings.Add(PresetWarning);
-                }
                 ReplayRenderSettings.Preset = preset;
                 currentPreset = value;
             }
             UpdateWarnings();
         }
 
-        [UIComponent("encoder-test-text")]
-        private TMPro.TextMeshProUGUI encoderTestText;
+        [UIComponent("encoder-test-text")] private TMPro.TextMeshProUGUI encoderTestText;
 
-        // encoder tester
         [UIAction("OnEncoderTestClicked")]
         private void OnTestEncoder()
         {
@@ -208,53 +166,101 @@ namespace RenderMod.UI
             }
         }
 
+        private readonly List<string> QualityWarnings = new List<string>();
+        private readonly List<string> VideoWarnings = new List<string>();
+        private readonly List<string> CameraWarnings = new List<string>();
+        private readonly List<string> OtherWarnings = new List<string>();
 
-        private List<string> QualityWarnings = new List<string>();
-        private List<string> VideoWarnings = new List<string>();
-        private List<string> CameraWarnings = new List<string>();
-        private List<string> OtherWarnings = new List<string>();
         protected override void DidActivate(bool firstActivation, bool addedToHierarchy, bool screenSystemEnabling)
         {
             cameraOptions.Clear();
-            List<string> cameras = new List<string>();
-            foreach (var item in Directory.GetFiles(Path.Combine(UnityGame.UserDataPath, "Camera2", "Cameras")))
-            {
-                _log.Notice($"Found camera: {Path.GetFileNameWithoutExtension(item)}");
-                cameras.Add(Path.GetFileNameWithoutExtension(item));
-            }
-            cameraOptions = cameras;
+            var cameras = CameraUtils.Core.CamerasManager.GetRegisteredCameras()
+                .Select(x => (object)x.Camera.transform.GetObjectPath(2))
+                .ToList();
+
             base.DidActivate(firstActivation, addedToHierarchy, screenSystemEnabling);
+
+            cameraOptions = cameras;
+            cameraSpecifierDropDown.Values = cameraOptions;
+            cameraSpecifierDropDown.Value = ReplayRenderSettings.SpecifiedCameraName;
+            cameraSpecifierDropDown.UpdateChoices();
+
             if (firstActivation)
             {
-                tabSelector.TextSegmentedControl.didSelectCellEvent += (segmentedControl, cell) =>
+                tabSelector.TextSegmentedControl.didSelectCellEvent += (_, cell) =>
                 {
-                    switch (cell)
-                    {
-                        case 0:
-                            qualityWarningText.text = string.Join("\n", QualityWarnings);
-                            break;
-                        case 1:
-                            videoWarningText.text = string.Join("\n", VideoWarnings);
-                            break;
-                        case 2:
-                            cameraWarningText.text = string.Join("\n", CameraWarnings);
-                            break;
-                        case 3:
-                            otherWarningText.text = string.Join("\n", OtherWarnings);
-                            break;
-                    }
+                    RefreshTab(cell);
                 };
+
                 tabSelector.TextSegmentedControl.SelectCellWithNumber(0);
                 UpdateWarnings();
             }
         }
 
+        [UIAction("#post-parse")]
+        public void PostParse()
+        {
+            UpdateWarnings();
+        }
+
+        private void RefreshTab(int tabIndex)
+        {
+            switch (tabIndex)
+            {
+                case 0: qualityWarningText.text = BuildWarningText(QualityWarnings, "quality"); break;
+                case 1: videoWarningText.text = BuildWarningText(VideoWarnings, "video"); break;
+                case 2: cameraWarningText.text = BuildWarningText(CameraWarnings, "camera"); break;
+                case 3: otherWarningText.text = BuildWarningText(OtherWarnings, "other"); break;
+            }
+        }
+
         public void UpdateWarnings()
         {
-            qualityWarningText.text = string.Join("\n", QualityWarnings);
-            videoWarningText.text = string.Join("\n", VideoWarnings);
-            cameraWarningText.text = string.Join("\n", CameraWarnings);
-            otherWarningText.text = string.Join("\n", OtherWarnings);
+            if (qualityWarningText == null || videoWarningText == null || cameraWarningText == null || otherWarningText == null)
+                return;
+
+            QualityWarnings.Clear();
+            VideoWarnings.Clear();
+            CameraWarnings.Clear();
+            OtherWarnings.Clear();
+
+            string currentResolution = resolution;
+            int currentFps = ReplayRenderSettings.FPS;
+            int currentBitrate = ReplayRenderSettings.BitrateKbps;
+            string currentExtraArgs = ReplayRenderSettings.ExtraFFmpegArgs;
+            string currentPresetString = ReplayRenderSettings.Preset.ToString();
+            string cameraName = ReplayRenderSettings.SpecifiedCameraName;
+
+            if (currentResolution == "4K")
+                VideoWarnings.Add(FourKWarning);
+            if (currentPresetString == QualityPreset.High.ToString())
+                QualityWarnings.Add(PresetWarning);
+
+            if (currentFps > 60)
+                VideoWarnings.Add(FPSWarning);
+            if (currentBitrate > 10000)
+                VideoWarnings.Add(BitrateWarning);
+
+            if (!string.IsNullOrEmpty(currentExtraArgs))
+                OtherWarnings.Add(ExtraArgsWarning);
+
+            if (!cameraName.ToLower().Contains("main"))
+                CameraWarnings.Add(NonMainCameraWarning);
+
+            qualityWarningText.text = BuildWarningText(QualityWarnings, "quality");
+            videoWarningText.text = BuildWarningText(VideoWarnings, "video");
+            cameraWarningText.text = BuildWarningText(CameraWarnings, "camera");
+            otherWarningText.text = BuildWarningText(OtherWarnings, "other");
+
+            RefreshTab(tabSelector.TextSegmentedControl.selectedCellNumber);
+        }
+
+        private string BuildWarningText(List<string> warnings, string category)
+        {
+            if (warnings.Count == 0)
+                return $"<color=#888888>No {category} warnings.</color>";
+
+            return string.Join("\n", warnings.Select(w => $"<color=#ffcc00>• {w}</color>"));
         }
     }
 }
