@@ -240,6 +240,7 @@
     <Compile Include="Installers\RenderInstaller.cs" />
     <Compile Include="Plugin.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Render\BSAudioRenderer.cs" />
     <Compile Include="Render\EncoderHelpers.cs" />
     <Compile Include="Render\FfmpegPipe.cs" />
     <Compile Include="Render\RenderCameraEffect.cs" />

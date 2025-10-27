@@ -157,6 +157,11 @@ public class ReplayVideoRenderer : ILateDisposable, IAffinity, ILateTickable
     {
         _replayCamera = _effectManager.RenderCameraEffect.FoundCamera;
 
+        if(_replayCamera == null)
+        {
+            _replayCamera = Camera.main;
+        }
+
         _replayCamera.enabled = true;
 
         // make the render texture (this is where the magic happens)
