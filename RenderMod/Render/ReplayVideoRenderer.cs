@@ -257,6 +257,7 @@ public class ReplayVideoRenderer : ILateDisposable, IAffinity, ILateTickable
         _progressUI.Hide();
         AudioListener.volume = 1f;
         DingPlayer.shouldPlayDing = true;
+        System.Diagnostics.Process.Start("explorer.exe", Path.GetDirectoryName(_finishedPath));
     }
 
     private void ClearUnfinishedDirectory()
