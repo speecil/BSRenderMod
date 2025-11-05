@@ -14,6 +14,8 @@ namespace RenderMod.Render
     {
         public static bool RenderEnabled = false;
 
+        public static string CameraType = "Camera2";
+
         // general
         public static int Width = 1920;
         public static int Height = 1080; // TODO: add preset support for 4K, 1440p, instead of increment settings
@@ -53,6 +55,7 @@ namespace RenderMod.Render
             string jsonText = File.ReadAllText(UnityGame.UserDataPath + "/RenderModSettings.json");
             Newtonsoft.Json.Linq.JObject settings = Newtonsoft.Json.Linq.JObject.Parse(jsonText);
             RenderEnabled = settings.Value<bool?>("RenderEnabled") ?? RenderEnabled;
+            CameraType = settings.Value<string>("CameraType") ?? CameraType;
             Width = settings.Value<int?>("Width") ?? Width;
             Height = settings.Value<int?>("Height") ?? Height;
             FPS = settings.Value<int?>("FPS") ?? FPS;
@@ -77,6 +80,7 @@ namespace RenderMod.Render
             var settings = new Newtonsoft.Json.Linq.JObject
             {
                 ["RenderEnabled"] = RenderEnabled,
+                ["CameraType"] = CameraType,
                 ["Width"] = Width,
                 ["Height"] = Height,
                 ["FPS"] = FPS,

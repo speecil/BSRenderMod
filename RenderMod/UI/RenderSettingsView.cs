@@ -63,8 +63,12 @@ namespace RenderMod.UI
             }
         }
 
+        [UIComponent("specifier-vert")]
+        private UnityEngine.UI.VerticalLayoutGroup specifierVert;
+
         [UIValue("fps")] private int fps = ReplayRenderSettings.FPS;
         [UIValue("camera-option")] private string cameraSpecifier = ReplayRenderSettings.SpecifiedCameraName;
+        [UIValue("cameraType-option")] private string cameraTypeSpecifier = ReplayRenderSettings.CameraType;
         [UIValue("bitrate")] private int bitrate = ReplayRenderSettings.BitrateKbps;
         [UIValue("audioBitrate")] private int audioBitrate = ReplayRenderSettings.AudioBitrateKbps;
         [UIValue("extraFFmpegArgs")] private string extraFFmpegArgs = ReplayRenderSettings.ExtraFFmpegArgs;
@@ -86,7 +90,21 @@ namespace RenderMod.UI
             set { _cameraOptions = value; NotifyPropertyChanged(); }
         }
 
+        private List<object> _cameraTypeOptions = new List<object>()
+        {
+            "Camera2", "ReeCamera", "None"
+        };
+
+        [UIValue("cameraType-options")]
+        private List<object> cameraTypeOptions
+        {
+            get => _cameraTypeOptions.ToList();
+            set { _cameraTypeOptions = value; NotifyPropertyChanged(); }
+        }
+
         [UIComponent("camera-specifier")] private DropDownListSetting cameraSpecifierDropDown;
+
+        [UIComponent("cameraType-specifier")] private DropDownListSetting cameraTypeDropDown;
 
         private readonly string FourKWarning = "4K renders require significant processing power and disk space.";
         private readonly string FPSWarning = "High FPS values increase file size and CPU usage.";
@@ -94,6 +112,7 @@ namespace RenderMod.UI
         private readonly string ExtraArgsWarning = "Extra FFmpeg arguments can cause instability or crashes.";
         private readonly string PresetWarning = "High Quality preset uses substantial storage and processing.";
         private readonly string NonMainCameraWarning = "Camera is not called \"Main\". Ensure this is the correct camera.";
+        private readonly string NoneCameraTypeWarning = "No camera mod installed, main camera will be used.";
 
         [UIAction("OnResolutionChanged")]
         private void OnResolutionChanged(string value)
@@ -113,6 +132,23 @@ namespace RenderMod.UI
         private void OnCameraSpecifierChanged(string value)
         {
             ReplayRenderSettings.SpecifiedCameraName = value;
+            UpdateWarnings();
+        }
+
+        [UIAction("OnCameraTypeSpecifierChanged")]
+        private void OnCameraTypeSpecifierChanged(string value)
+        {
+            ReplayRenderSettings.CameraType = value;
+            cameraSpecifierDropDown.Interactable = true;
+            switch (value)
+            {
+                case "Camera2":
+                    break;
+                case "None":
+                case "ReeCamera":
+                    cameraSpecifierDropDown.Interactable = false;
+                    break;
+            }
             UpdateWarnings();
         }
 
@@ -174,11 +210,14 @@ namespace RenderMod.UI
         protected override void DidActivate(bool firstActivation, bool addedToHierarchy, bool screenSystemEnabling)
         {
             cameraOptions.Clear();
-            var cameras = CameraUtils.Core.CamerasManager.GetRegisteredCameras()
+            var cameras = CameraUtils.Core.CamerasManager.GetRegisteredCameras().Where(x => x.CameraFlags != CameraUtils.Core.CameraFlags.Mirror 
+                                                                                            && (!x.Camera.transform.GetObjectPath(2).Contains("/ReeLayout") && !x.Camera.transform.GetObjectPath(2).Contains("/Origin/")))
                 .Select(x => (object)x.Camera.transform.GetObjectPath(2))
                 .ToList();
 
             base.DidActivate(firstActivation, addedToHierarchy, screenSystemEnabling);
+
+            OnCameraTypeSpecifierChanged(ReplayRenderSettings.CameraType);
 
             cameraOptions = cameras;
             cameraSpecifierDropDown.Values = cameraOptions;
@@ -230,6 +269,7 @@ namespace RenderMod.UI
             string currentExtraArgs = ReplayRenderSettings.ExtraFFmpegArgs;
             string currentPresetString = ReplayRenderSettings.Preset.ToString();
             string cameraName = ReplayRenderSettings.SpecifiedCameraName;
+            string cameraType = ReplayRenderSettings.CameraType;
 
             if (currentResolution == "4K")
                 VideoWarnings.Add(FourKWarning);
@@ -246,6 +286,9 @@ namespace RenderMod.UI
 
             if (!cameraName.ToLower().Contains("main"))
                 CameraWarnings.Add(NonMainCameraWarning);
+
+            if(cameraType == "None")
+                CameraWarnings.Add(NoneCameraTypeWarning);
 
             qualityWarningText.text = BuildWarningText(QualityWarnings, "quality");
             videoWarningText.text = BuildWarningText(VideoWarnings, "video");

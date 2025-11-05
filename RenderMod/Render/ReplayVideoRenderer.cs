@@ -157,9 +157,22 @@ public class ReplayVideoRenderer : ILateDisposable, IAffinity, ILateTickable
     {
         _replayCamera = _effectManager.RenderCameraEffect.FoundCamera;
 
-        if(_replayCamera == null)
+        if(_replayCamera == null && ReplayRenderSettings.CameraType != "None")
+        {
+            _returnToMenuController.ReturnToMenu(); // uh oh\
+            return;
+        }
+
+        if (ReplayRenderSettings.CameraType == "None")
         {
             _replayCamera = Camera.main;
+        }
+
+        if(_replayCamera == null)
+        {
+            _log.Error("Replay camera not found, cannot render video.");
+            _returnToMenuController.ReturnToMenu(); // uh oh again
+            return;
         }
 
         _replayCamera.enabled = true;
