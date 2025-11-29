@@ -1,4 +1,5 @@
-﻿using IPA;
+﻿using HarmonyLib;
+using IPA;
 using IPA.Utilities;
 using RenderMod.Render;
 using SiraUtil.Zenject;
@@ -11,6 +12,8 @@ namespace RenderMod
     [Plugin(RuntimeOptions.SingleStartInit), NoEnableDisable]
     public class Plugin
     {
+        private Harmony _harmony = null;
+
         [Init]
         public Plugin(IPALogger logger, Zenjector zenjector)
         {
@@ -23,10 +26,12 @@ namespace RenderMod
                 logger.Error("ffmpeg.exe not found in the game directory! Exiting!");
                 return;
             }
+            _harmony = new Harmony("com.speecil.beatsaber.rendermod");
             zenjector.UseLogger(logger);
             zenjector.Install<Installers.AppInstaller>(Location.App);
             zenjector.Install<Installers.MenuInstaller>(Location.Menu);
             zenjector.Install<Installers.RenderInstaller>(Location.GameCore);
+            _harmony.PatchAll(assembly: System.Reflection.Assembly.GetExecutingAssembly());
         }
 
         [OnExit]

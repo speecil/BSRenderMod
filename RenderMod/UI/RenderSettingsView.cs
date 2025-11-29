@@ -210,7 +210,7 @@ namespace RenderMod.UI
         protected override void DidActivate(bool firstActivation, bool addedToHierarchy, bool screenSystemEnabling)
         {
             cameraOptions.Clear();
-            var cameras = CameraUtils.Core.CamerasManager.GetRegisteredCameras().Where(x => x.CameraFlags != CameraUtils.Core.CameraFlags.Mirror 
+            var cameras = CameraUtils.Core.CamerasManager.GetRegisteredCameras().Where(x => x.CameraFlags != CameraUtils.Core.CameraFlags.Mirror
                                                                                             && (!x.Camera.transform.GetObjectPath(2).Contains("/ReeLayout") && !x.Camera.transform.GetObjectPath(2).Contains("/Origin/")))
                 .Select(x => (object)x.Camera.transform.GetObjectPath(2))
                 .ToList();
@@ -287,7 +287,7 @@ namespace RenderMod.UI
             if (!cameraName.ToLower().Contains("main"))
                 CameraWarnings.Add(NonMainCameraWarning);
 
-            if(cameraType == "None")
+            if (cameraType == "None")
                 CameraWarnings.Add(NoneCameraTypeWarning);
 
             qualityWarningText.text = BuildWarningText(QualityWarnings, "quality");

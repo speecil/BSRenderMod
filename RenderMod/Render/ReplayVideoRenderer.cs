@@ -157,7 +157,7 @@ public class ReplayVideoRenderer : ILateDisposable, IAffinity, ILateTickable
     {
         _replayCamera = _effectManager.RenderCameraEffect.FoundCamera;
 
-        if(_replayCamera == null && ReplayRenderSettings.CameraType != "None")
+        if (_replayCamera == null && ReplayRenderSettings.CameraType != "None")
         {
             _returnToMenuController.ReturnToMenu(); // uh oh\
             return;
@@ -168,7 +168,7 @@ public class ReplayVideoRenderer : ILateDisposable, IAffinity, ILateTickable
             _replayCamera = Camera.main;
         }
 
-        if(_replayCamera == null)
+        if (_replayCamera == null)
         {
             _log.Error("Replay camera not found, cannot render video.");
             _returnToMenuController.ReturnToMenu(); // uh oh again
@@ -190,6 +190,14 @@ public class ReplayVideoRenderer : ILateDisposable, IAffinity, ILateTickable
         _hadTargetTex = _replayCamera.targetTexture != null;
         _origTarget = _replayCamera.targetTexture;
         _replayCamera.targetTexture = _rt;
+        if (ReplayRenderSettings.CameraType == "ReeCamera")
+        {
+            AppDomain currentDomain = AppDomain.CurrentDomain;
+            if (currentDomain.GetAssemblies().Any(a => a.GetName().Name.Contains("ReeCamera")))
+            {
+                _replayCamera.GetComponent<ReeCamera.MainCameraController>().SetTargetTexture(_rt);
+            }
+        }
         _origProj = _replayCamera.projectionMatrix;
 
         // get the delta time setup
