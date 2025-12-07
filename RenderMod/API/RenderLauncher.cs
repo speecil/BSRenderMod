@@ -11,6 +11,7 @@ namespace RenderMod.API
         public static void Launch(Action onRenderFinished)
         {
             BeatLeaderWarningPatch.shouldNotInterfere = true;
+            ScoreSaberWarningPatch.shouldNotInterfere = true;
             previousState = ReplayRenderSettings.RenderEnabled;
             ReplayRenderSettings.RenderEnabled = true;
             onRenderFinished += OnRenderComplete;
@@ -19,6 +20,7 @@ namespace RenderMod.API
         public static void OnRenderComplete()
         {
             BeatLeaderWarningPatch.shouldNotInterfere = false;
+            ScoreSaberWarningPatch.shouldNotInterfere = false;
             ReplayRenderSettings.RenderEnabled = previousState;
         }
     }
