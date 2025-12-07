@@ -6,14 +6,14 @@ namespace RenderMod.API
 {
     public class RenderLauncher
     {
-        public static bool previousState = false;
+        private static bool previousState = false;
 
-        public static void Launch(Action onComplete)
+        public static void Launch(Action onRenderFinished)
         {
             BeatLeaderWarningPatch.shouldNotInterfere = true;
             previousState = ReplayRenderSettings.RenderEnabled;
             ReplayRenderSettings.RenderEnabled = true;
-            onComplete += OnRenderComplete;
+            onRenderFinished += OnRenderComplete;
         }
 
         public static void OnRenderComplete()

@@ -107,21 +107,6 @@ public class ReplayVideoRenderer : ILateDisposable, IAffinity, ILateTickable
         {
             return;
         }
-        //Quaternion smoothedReplayRot = Quaternion.Slerp(
-        //            _lastCameraRot,
-        //            _replayCamera.transform.rotation,
-        //            Time.deltaTime * 5f
-        //        );
-
-        //Quaternion targetForward = Quaternion.LookRotation(Vector3.forward, Vector3.up);
-        //Quaternion finalRot = Quaternion.Slerp(
-        //    smoothedReplayRot,
-        //    targetForward,
-        //    Time.deltaTime * 0.05f
-        //);
-
-        //_replayCamera.transform.rotation = finalRot;
-        //_lastCameraRot = finalRot;
 
         int bufferIdx = frameIndex % BufferCount;
 
@@ -145,7 +130,7 @@ public class ReplayVideoRenderer : ILateDisposable, IAffinity, ILateTickable
         frameIndex++;
 
         // ensure that beatleaders feature to keep the map from exiting doesnt break rendering
-        if (_atsc.songTime >= _atsc.songEndTime) // song ended or within epsilon
+        if (_atsc.songTime + Mathf.Epsilon >= _atsc.songEndTime) // song ended or within epsilon
         {
             _returnToMenuController.ReturnToMenu();
         }
@@ -300,6 +285,7 @@ public class ReplayVideoRenderer : ILateDisposable, IAffinity, ILateTickable
         }
     }
 
+    // this fixes flying scores spawning in the same spot twice where 2 or more notes are cut in the same frame
     [AffinityPatch(typeof(FlyingScoreSpawner), nameof(FlyingScoreSpawner.SpawnFlyingScoreNextFrame))]
     [AffinityPrefix]
     public bool DisableFlyingScoreSpawnerBug(FlyingScoreSpawner __instance, IReadonlyCutScoreBuffer cutScoreBuffer, Color color)

@@ -279,7 +279,6 @@
     <Compile Include="Render\ReplayProgressUI.cs" />
     <Compile Include="Render\ReplayRenderSettings.cs" />
     <Compile Include="Render\ReplayVideoRenderer.cs" />
-    <Compile Include="Render\SettingsApplicator.cs" />
     <Compile Include="UI\MenuButtonView.cs" />
     <Compile Include="UI\RenderSettingsFlow.cs" />
     <Compile Include="UI\RenderSettingsView.cs" />

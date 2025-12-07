@@ -7,7 +7,6 @@ public class ReplayProgressUI
     private Canvas _canvas;
     private TextMeshProUGUI _progressText;
 
-    // TODO: investigate whether this doesnt show in a BL replay (shows in a scoresaber and beatleader replay fine for me :cool:)
     public void Show()
     {
         if (_canvas != null) return; // already shown

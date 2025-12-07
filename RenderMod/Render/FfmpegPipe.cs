@@ -5,7 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using Debug = UnityEngine.Debug;
 
-public class FFmpegPipe : IDisposable
+public class FFmpegPipe
 {
     private Process ffmpeg;
     private Stream ffmpegInput;
@@ -21,18 +21,6 @@ public class FFmpegPipe : IDisposable
         ffmpeg.StartInfo.RedirectStandardError = true;
         ffmpeg.StartInfo.RedirectStandardOutput = true;
         ffmpeg.StartInfo.CreateNoWindow = true;
-
-        //ffmpeg.ErrorDataReceived += (sender, e) =>
-        //{
-        //    if (!string.IsNullOrEmpty(e.Data))
-        //        Debug.LogWarning($"[FFmpeg] {e.Data}");
-        //};
-
-        //ffmpeg.OutputDataReceived += (sender, e) =>
-        //{
-        //    if (!string.IsNullOrEmpty(e.Data))
-        //        Debug.Log($"[FFmpeg] {e.Data}");
-        //};
 
         try
         {
@@ -95,7 +83,6 @@ public class FFmpegPipe : IDisposable
         ffmpeg.Dispose();
     }
 
-
     public void RemuxRawH264ToMp4(string rawH264Path, string outputMp4Path)
     {
         var ffm = new Process();
@@ -129,11 +116,5 @@ public class FFmpegPipe : IDisposable
         ffm.WaitForExit();
 
         File.Delete(videoMp4Path);
-    }
-
-    // currently not being binded, but leaving the zenject interface for consistency / just in case i do want to bind this later
-    public void Dispose()
-    {
-        Close();
     }
 }

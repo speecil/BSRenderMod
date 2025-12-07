@@ -37,7 +37,6 @@ namespace RenderMod
             Resources.FindObjectsOfTypeAll<SoloFreePlayFlowCoordinator>().FirstOrDefault().PresentFlowCoordinator(renderSettingsVFlow);
         }
 
-        // lifecycle methods
         public void Initialize()
         {
             gameplaySetup.AddTab("Render Mod", "RenderMod.UI.RenderModView.bsml", this, MenuType.Solo);

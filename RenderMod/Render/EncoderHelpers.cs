@@ -65,22 +65,7 @@ namespace RenderMod.Render
                     proc.StartInfo.UseShellExecute = false;
                     proc.StartInfo.CreateNoWindow = true;
 
-                    //proc.ErrorDataReceived += (sender, e) =>
-                    //{
-                    //    if (!string.IsNullOrEmpty(e.Data))
-                    //        UnityEngine.Debug.Log($"[FFmpeg] {e.Data}");
-                    //};
-
-                    //proc.OutputDataReceived += (sender, e) =>
-                    //{
-                    //    if (!string.IsNullOrEmpty(e.Data))
-                    //        UnityEngine.Debug.Log($"[FFmpeg-OUT] {e.Data}");
-                    //};
-
                     proc.Start();
-
-                    //proc.BeginErrorReadLine();
-                    //proc.BeginOutputReadLine();
 
                     proc.WaitForExit();
 
@@ -150,7 +135,5 @@ namespace RenderMod.Render
 
             return (encoder, args);
         }
-
-
     }
 }
