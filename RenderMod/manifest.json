@@ -11,7 +11,6 @@
     "SiraUtil": "^3.2.1",
     "BeatSaberMarkupLanguage": "^1.12.5",
     "SongCore": "^3.15.3",
-    "CameraUtils": "^1.0.7",
-    "FFmpeg": "^4.3.3"
+    "CameraUtils": "^1.0.7"
   }
 }
