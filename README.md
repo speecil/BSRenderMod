@@ -13,7 +13,7 @@
   - Bitrate  
   - Resolution (supports output higher than your display resolution)  
   - Frame rate (FPS)  
-  - Camera settings (Camera2 camera selection with default camera fallback)
+  - Camera settings (Camera2, ReeCamera, None or Default)
 - Output files saved to:  
   ```
   Beat Saber/Renders/Finished
@@ -32,8 +32,9 @@ From there, you can:
 ## Notes
 
 - ****FFMPEG must be installed from your target mod manager and in `Beat Saber/Libs`****
+- ****CameraUtils must be installed from your target mod manager and in `Beat Saber/Plugins`****
 - This mod renders from replay data and at best, renders close to real time with lower settings.
 
-  *(The mod will not run unless in `-fpfc` or the first person flying controller)*
+  *(The mod will not run unless using `-fpfc` or the first person flying controller)*
 - Ensure that the replay files being played are not broken or your replay playback mod is broken, this mod does not handle the replays themselves
 - Audio is currently **NOT** recorded from the game, and is instead muxed in from the beatmaps ogg/egg file
