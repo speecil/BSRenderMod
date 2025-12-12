@@ -1,4 +1,4 @@
-﻿using IPA.Utilities;
+using IPA.Utilities;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -11,62 +11,40 @@ namespace RenderMod.Render
         {
             var possibleEncoders = new[]
             {
-                "h264_nvenc", // NVIDIA
-                "h264_amf",   // AMD
-                "h264_qsv",   // Intel
-                "libx264"     // CPU fallback
+                "h264_nvenc", // Nvidia
+                "h264_amf", // AMD
+                "h264_qsv", // QSV
+                "libx264" // CPU (Fallback)
             };
 
             foreach (var encoder in possibleEncoders)
             {
-                if (CheckFFmpegSupportsEncoder(encoder))
+                if (TestEncoder(encoder))
                     return encoder;
             }
 
-            return "libx264"; // fallback (worst case scenario)
+            return "libx264"; // Only if the others fail
         }
 
-        private static bool CheckFFmpegSupportsEncoder(string encoder)
-        {
-            try
-            {
-                using (var proc = new Process())
-                {
-                    proc.StartInfo.FileName = Path.Combine(UnityGame.LibraryPath, "ffmpeg.exe");
-                    proc.StartInfo.Arguments = "-hide_banner -encoders";
-                    proc.StartInfo.RedirectStandardOutput = true;
-                    proc.StartInfo.UseShellExecute = false;
-                    proc.StartInfo.CreateNoWindow = true;
-                    proc.Start();
-
-                    string output = proc.StandardOutput.ReadToEnd();
-                    proc.WaitForExit();
-
-                    return TestEncoder(encoder) && output.Contains(encoder);
-                }
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
-        //test encoder and check for exit 0
         public static bool TestEncoder(string encoder)
         {
             try
             {
+                string ffmpegPath = Path.Combine(UnityGame.LibraryPath, "ffmpeg.exe");
+                
+                if (!File.Exists(ffmpegPath))
+                    ffmpegPath = "ffmpeg";
+
                 using (var proc = new Process())
                 {
-                    proc.StartInfo.FileName = "ffmpeg";
-                    proc.StartInfo.Arguments = $"-hide_banner -f lavfi -i testsrc=size=1280x720:rate=30 -c:v {encoder} -t 1 -f null -";
+                    proc.StartInfo.FileName = ffmpegPath;
+                    proc.StartInfo.Arguments = $"-hide_banner -f lavfi -i testsrc=size=1280x720:rate=30 -c:v {encoder} -t 1 -f null -"; // Actually test encoders
                     proc.StartInfo.RedirectStandardOutput = true;
                     proc.StartInfo.RedirectStandardError = true;
                     proc.StartInfo.UseShellExecute = false;
                     proc.StartInfo.CreateNoWindow = true;
 
                     proc.Start();
-
                     proc.WaitForExit();
 
                     return proc.ExitCode == 0;
@@ -74,11 +52,10 @@ namespace RenderMod.Render
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"FFmpeg encoder test failed: {ex}");
+                Debug.WriteLine($"FFmpeg encoder test failed for {encoder}: {ex.Message}"); // Error message if it fails
                 return false;
             }
         }
-
 
         public static (string encoder, string args) BuildEncoderArgs()
         {
