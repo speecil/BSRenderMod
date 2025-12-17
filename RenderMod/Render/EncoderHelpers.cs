@@ -58,7 +58,7 @@ namespace RenderMod.Render
             {
                 using (var proc = new Process())
                 {
-                    proc.StartInfo.FileName = "ffmpeg";
+                    proc.StartInfo.FileName = Path.Combine(UnityGame.LibraryPath, "ffmpeg.exe");
                     proc.StartInfo.Arguments = $"-hide_banner -f lavfi -i testsrc=size=1280x720:rate=30 -c:v {encoder} -t 1 -f null -";
                     proc.StartInfo.RedirectStandardOutput = true;
                     proc.StartInfo.RedirectStandardError = true;
