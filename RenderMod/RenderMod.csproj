@@ -267,7 +267,6 @@
   <ItemGroup>
     <Compile Include="AffinityPatches\BeatLeaderWarningPatch.cs" />
     <Compile Include="AffinityPatches\ScoreSaberWarningPatch.cs" />
-    <Compile Include="API\RenderLauncher.cs" />
     <Compile Include="Installers\AppInstaller.cs" />
     <Compile Include="Installers\MenuInstaller.cs" />
     <Compile Include="Installers\RenderInstaller.cs" />
@@ -306,5 +305,6 @@
   <ItemGroup>
     <EmbeddedResource Include="UI\Ding.ogg" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
