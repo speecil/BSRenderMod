@@ -15,6 +15,7 @@ namespace RenderMod.Util
         {
             get
             {
+                _log.Info("Getting RenderCameraEffect");
                 return _renderCameraEffect;
             }
         }
@@ -27,12 +28,14 @@ namespace RenderMod.Util
 
         public void Initialize()
         {
+            _log.Info("Initializing EffectManager");
             _renderCameraEffect = new RenderCameraEffect(_log);
             CameraUtils.Core.CamerasManager.RegisterCameraEffect(_renderCameraEffect);
         }
 
         public void Dispose()
         {
+            _log.Info("Disposing EffectManager");
             _renderCameraEffect = null;
             CameraUtils.Core.CamerasManager.UnRegisterCameraEffect(_renderCameraEffect);
         }

@@ -14,7 +14,7 @@ namespace RenderMod.Render
     {
         public static bool RenderEnabled = false;
 
-        public static string CameraType = "Camera2";
+        public static string CameraType = "None";
 
         // general
         public static int Width = 1920;

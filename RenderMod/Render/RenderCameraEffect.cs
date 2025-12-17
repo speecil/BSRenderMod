@@ -8,11 +8,12 @@ namespace RenderMod.Render
 {
     internal class RenderCameraEffect : ICameraEffect
     {
-        SiraLog _siraLog;
+        private SiraLog _siraLog;
         public RenderCameraEffect(SiraLog siraLog)
         {
             FoundCamera = null;
             _siraLog = siraLog;
+            _siraLog.Notice("RenderCameraEffect created");
         }
 
         public Camera FoundCamera { get; private set; }
@@ -37,6 +38,7 @@ namespace RenderMod.Render
             {
                 var components = registeredCamera.Camera.GetComponents<Component>();
                 bool isSuitable = components.Any(c => c.GetType().FullName == "ReeCamera.MainCameraController");
+                return isSuitable;
             }
 
             return registeredCamera.Camera.transform.GetObjectPath(int.MaxValue).Contains(ReplayRenderSettings.SpecifiedCameraName);

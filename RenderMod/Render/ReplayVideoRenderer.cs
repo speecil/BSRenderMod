@@ -144,6 +144,7 @@ public class ReplayVideoRenderer : ILateDisposable, IAffinity, ILateTickable
 
         if (_replayCamera == null && ReplayRenderSettings.CameraType != "None")
         {
+            _log.Error("Replay camera not found, cannot render video.");
             _returnToMenuController.ReturnToMenu(); // uh oh\
             return;
         }
