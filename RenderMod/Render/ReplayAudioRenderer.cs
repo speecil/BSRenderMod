@@ -1,4 +1,5 @@
 ﻿using RenderMod.Util;
+using SiraUtil.Affinity;
 using SiraUtil.Logging;
 using System;
 using System.Collections.Concurrent;
@@ -9,10 +10,11 @@ using static RenderMod.Render.RenderManager;
 
 namespace RenderMod.Render
 {
-    public class ReplayAudioRenderer : MonoBehaviour
+    public class ReplayAudioRenderer : IAffinity, ILateDisposable
     {
         [Inject] private readonly SiraLog _log = null;
         [Inject] private readonly EffectManager _effectManager = null;
+        [Inject] private readonly ReplayProgressUI _progressUI = null;
 
         private AudioCaptureFilter _filter;
         private AudioListener _listener;
@@ -31,7 +33,8 @@ namespace RenderMod.Render
 
         private string _audioPath;
 
-        public void Start()
+        [AffinityPatch(typeof(AudioTimeSyncController), nameof(AudioTimeSyncController.StartSong))]
+        public void Init()
         {
             if (currentState != RenderState.Audio)
                 return;
@@ -53,6 +56,10 @@ namespace RenderMod.Render
 
             _recording = true;
             Application.quitting += OnQuit;
+
+            _progressUI.Show();
+
+            _progressUI.UpdateProgress(1f, "Rendering Audio...");
 
             _log.Notice($"Recording audio to {_audioPath}");
         }
@@ -142,13 +149,15 @@ namespace RenderMod.Render
 
         private void OnQuit()
         {
-            OnDestroy();
+            LateDispose();
         }
 
-        public void OnDestroy()
+        public void LateDispose()
         {
             if (!_recording)
                 return;
+
+            _progressUI.Hide();
 
             _recording = false;
 

@@ -16,6 +16,7 @@ namespace RenderMod.Render
             {
                 float[] dataCopy = new float[data.Length];
                 Array.Copy(data, dataCopy, data.Length);
+                Array.Clear(data, 0, data.Length);
                 OnAudioData.Invoke(dataCopy, channels);
             }
         }

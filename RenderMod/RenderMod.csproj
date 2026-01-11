@@ -265,6 +265,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AffinityPatches\AutoPauseStealthPatch.cs" />
     <Compile Include="AffinityPatches\BeatLeaderWarningPatch.cs" />
     <Compile Include="AffinityPatches\ScoreSaberWarningPatch.cs" />
     <Compile Include="Installers\AppInstaller.cs" />

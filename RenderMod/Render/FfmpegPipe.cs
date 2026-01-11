@@ -113,12 +113,6 @@ public class FFmpegPipe
         ffm.StartInfo.CreateNoWindow = true;
         ffm.StartInfo.RedirectStandardError = true;
 
-        ffm.ErrorDataReceived += (s, e) =>
-        {
-            if (!string.IsNullOrEmpty(e.Data))
-                Debug.Log($"[FFmpeg] {e.Data}");
-        };
-
         ffm.Start();
         ffm.BeginErrorReadLine();
         ffm.WaitForExit();
@@ -148,12 +142,6 @@ public class FFmpegPipe
         ffm.StartInfo.UseShellExecute = false;
         ffm.StartInfo.CreateNoWindow = true;
         ffm.StartInfo.RedirectStandardError = true;
-
-        ffm.ErrorDataReceived += (s, e) =>
-        {
-            if (!string.IsNullOrEmpty(e.Data))
-                Debug.Log($"[FFmpeg] {e.Data}");
-        };
 
         ffm.Start();
         ffm.BeginErrorReadLine();
