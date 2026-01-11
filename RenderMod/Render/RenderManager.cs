@@ -1,6 +1,7 @@
 ﻿using IPA.Logging;
 using RenderMod.AffinityPatches;
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -103,6 +104,8 @@ namespace RenderMod.Render
 
                 FFmpegPipe.AddAudioToMp4(tempVideoMp4, latestAudioFile, finalMp4, ReplayRenderSettings.AudioBitrateKbps);
                 _log.Notice($"Final muxed MP4 created: {finalMp4}");
+
+                Process.Start("explorer.exe", $"/select,\"{finalMp4}\"");
             }
             catch (Exception ex)
             {
