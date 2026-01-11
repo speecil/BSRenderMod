@@ -9,6 +9,7 @@ using UnityEngine;
 
 namespace RenderMod.AffinityPatches
 {
+    // ScoreSaber.UI.Elements.Leaderboard.ScoreDetailView.StartReplay
     [HarmonyPatch]
     internal class ScoreSaberWarningPatch
     {
@@ -20,6 +21,7 @@ namespace RenderMod.AffinityPatches
             var asm = AppDomain.CurrentDomain.GetAssemblies()
                 .FirstOrDefault(a => a.GetName().Name == "ScoreSaber");
             if (asm == null) return null;
+
 
             var type = asm.GetType("ScoreSaber.UI.Elements.Leaderboard.ScoreDetailView");
             if (type == null) return null;

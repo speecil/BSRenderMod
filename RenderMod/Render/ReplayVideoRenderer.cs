@@ -1,4 +1,8 @@
+<<<<<<< Updated upstream
 ﻿using IPA.Utilities;
+=======
+﻿using BeatLeader.Utils;
+>>>>>>> Stashed changes
 using RenderMod.Render;
 using RenderMod.Util;
 using SiraUtil.Affinity;
@@ -36,9 +40,26 @@ public class ReplayVideoRenderer : ILateDisposable, IAffinity, ILateTickable
     private const int BufferCount = 8;
     private byte[][] _frameBuffers = null;
 
+<<<<<<< Updated upstream
     private Matrix4x4 _origProj = Matrix4x4.identity;
     private bool _hadTargetTex = false;
     private RenderTexture _origTarget = null;
+=======
+    private Matrix4x4 _origProj;
+    private bool _hadTargetTex;
+    private RenderTexture _origTarget;
+
+    private int _w, _h, _fps;
+    private int _frameIndex;
+    private bool _ready;
+
+    private float _oldCaptureDeltaTime;
+
+    private string StatusMessage = "";
+
+    string Safe(string s) =>
+    string.Concat(s.Where(c => !Path.GetInvalidFileNameChars().Contains(c)));
+>>>>>>> Stashed changes
 
     private int _w, _h, _fps = 0;
 
@@ -96,7 +117,26 @@ public class ReplayVideoRenderer : ILateDisposable, IAffinity, ILateTickable
             $"\"{_unfinishedPath}\"";
 
         _pipe = new FFmpegPipe(ffArgs);
+<<<<<<< Updated upstream
         InitInit();
+=======
+        _log.Notice($"FFmpeg started: {ffArgs}");
+
+        SetupCamera();
+        SetupTiming();
+
+        _progressUI.Show();
+        AudioListener.volume = 0f;
+
+        StatusMessage = $"Rendering\n{_beatmapLevel.songName} - {_beatmapLevel.songAuthorName}\n";
+
+        if (QueueMode)
+        {
+            StatusMessage += $"(Queue: ${GetQueueCount()} / ${QueueProgress})\n";
+        }
+
+        _ready = true;
+>>>>>>> Stashed changes
     }
 
     int frameIndex = 0;
@@ -195,7 +235,37 @@ public class ReplayVideoRenderer : ILateDisposable, IAffinity, ILateTickable
         // mute audio whilst rendering video
         AudioListener.volume = 0f;
 
+<<<<<<< Updated upstream
         _readyToRender = true;
+=======
+        int bufferIdx = _frameIndex % BufferCount;
+
+        AsyncGPUReadback.Request(_rt, 0, TextureFormat.RGB24, req =>
+        {
+            if (!req.hasError)
+            {
+                var data = req.GetData<byte>();
+                FlipFrame(data, _frameBuffers[bufferIdx], _w, _h);
+                _pipe.WriteFrame(_frameBuffers[bufferIdx]);
+            }
+            else
+            {
+                _log.Warn("GPU readback failed");
+            }
+        }).WaitForCompletion();
+
+        _progressUI.UpdateProgress(
+            Mathf.Clamp01(
+                (_atsc.songTime / _atsc.songEndTime)
+            ),
+            StatusMessage + $"Time: {_atsc.songTime:F2} / {_atsc.songEndTime:F2}"
+        );
+
+        _frameIndex++;
+
+        if (_atsc.songTime + Mathf.Epsilon >= _atsc.songEndTime)
+            _returnToMenuController.ReturnToMenu();
+>>>>>>> Stashed changes
     }
 
     private unsafe void FlipFrame(NativeArray<byte> src, byte[] dst, int width, int height)

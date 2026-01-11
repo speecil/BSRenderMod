@@ -9,6 +9,7 @@ using UnityEngine;
 
 namespace RenderMod.AffinityPatches
 {
+    // BeatLeader.Components.ReplayPanel.OnPlayButtonClicked
     [HarmonyPatch]
     internal class BeatLeaderWarningPatch
     {
@@ -23,7 +24,6 @@ namespace RenderMod.AffinityPatches
 
             var type = asm.GetType("BeatLeader.Components.ReplayPanel");
             if (type == null) return null;
-
             return AccessTools.Method(
                 type,
                 "OnPlayButtonClicked");
