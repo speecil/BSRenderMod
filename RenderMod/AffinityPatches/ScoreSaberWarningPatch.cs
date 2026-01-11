@@ -110,5 +110,22 @@ namespace RenderMod.AffinityPatches
                     false
                 });
         }
+
+        public static bool ShouldPatch(Harmony harmony)
+        {
+            if (TargetMethod() != null)
+            {
+                try
+                {
+                    harmony.Patch(TargetMethod(), prefix: new HarmonyMethod(typeof(ScoreSaberWarningPatch).GetMethod(nameof(Prefix), BindingFlags.Static | BindingFlags.Public)));
+                    return true;
+                }
+                catch
+                {
+                    Debug.LogError("Render Mod: Failed to patch BeatLeader replay button!");
+                }
+            }
+            return false;
+        }
     }
 }

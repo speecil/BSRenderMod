@@ -20,7 +20,7 @@ public class ReplayVideoRenderer : ILateDisposable, IAffinity, ILateTickable
     [Inject] private BeatmapKey _beatmapKey;
     [Inject] private SiraLog _log = null;
     [Inject] private ReplayProgressUI _progressUI = null;
-    [Inject] private readonly IReturnToMenuController _returnToMenuController = null;
+    [Inject] private readonly StandardLevelReturnToMenuController _returnToMenuController = null;
     [Inject] private readonly EffectManager _effectManager = null;
 
     private AudioTimeSyncController _atsc = null;

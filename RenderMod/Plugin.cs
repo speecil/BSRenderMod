@@ -1,6 +1,7 @@
 ﻿using HarmonyLib;
 using IPA;
 using IPA.Utilities;
+using RenderMod.AffinityPatches;
 using RenderMod.Render;
 using SiraUtil.Zenject;
 using System.IO;
@@ -12,8 +13,6 @@ namespace RenderMod
     [Plugin(RuntimeOptions.SingleStartInit), NoEnableDisable]
     public class Plugin
     {
-        private Harmony _harmony = null;
-
         [Init]
         public Plugin(IPALogger logger, Zenjector zenjector)
         {
@@ -26,12 +25,20 @@ namespace RenderMod
                 logger.Error("ffmpeg.exe not found in the game directory! Exiting!");
                 return;
             }
-            _harmony = new Harmony("com.speecil.beatsaber.rendermod");
+            var _harmony = new Harmony("com.speecil.beatsaber.rendermod");
+            if (!ScoreSaberWarningPatch.ShouldPatch(_harmony))
+            {
+                logger.Warn("ScoreSaber not found, skipping ScoreSaber replay warning patch.");
+            }
+            if (!BeatLeaderWarningPatch.ShouldPatch(_harmony))
+            {
+                logger.Warn("BeatLeader not found, skipping BeatLeader replay warning patch.");
+            }
+
             zenjector.UseLogger(logger);
             zenjector.Install<Installers.AppInstaller>(Location.App);
             zenjector.Install<Installers.MenuInstaller>(Location.Menu);
             zenjector.Install<Installers.RenderInstaller>(Location.GameCore);
-            _harmony.PatchAll(assembly: System.Reflection.Assembly.GetExecutingAssembly());
         }
 
         [OnExit]
