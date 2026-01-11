@@ -14,6 +14,8 @@ namespace RenderMod.AffinityPatches
     {
         public static bool shouldNotInterfere = false;
 
+        public static object instance = null;
+
         [HarmonyTargetMethod]
         public static MethodBase TargetMethod()
         {
@@ -33,6 +35,7 @@ namespace RenderMod.AffinityPatches
         public static bool Prefix(
             object __instance)
         {
+            instance = __instance;
             if (!ReplayRenderSettings.RenderEnabled || shouldNotInterfere)
             {
                 shouldNotInterfere = false;
@@ -49,7 +52,7 @@ namespace RenderMod.AffinityPatches
                 () =>
                 {
                     shouldNotInterfere = true;
-                    TargetMethod().Invoke(__instance, null);
+                    RenderManager.StartVideoRender(false);
                 },
                 "Render Mod",
                 $"About to render a ScoreSaber Replay\n" +

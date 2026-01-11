@@ -34,11 +34,17 @@ namespace RenderMod
             {
                 logger.Warn("BeatLeader not found, skipping BeatLeader replay warning patch.");
             }
-
+            if (!AutoPauseStealthPatch.ShouldPatch(_harmony))
+            {
+                logger.Warn("AutoPauseStealth not found, skipping AutoPauseStealth patch.");
+            }
+            RenderManager._log = logger;
             zenjector.UseLogger(logger);
             zenjector.Install<Installers.AppInstaller>(Location.App);
             zenjector.Install<Installers.MenuInstaller>(Location.Menu);
             zenjector.Install<Installers.RenderInstaller>(Location.GameCore);
+
+            UnityEngine.SceneManagement.SceneManager.activeSceneChanged += RenderManager.SceneChange;
         }
 
         [OnExit]

@@ -17,6 +17,7 @@ namespace RenderMod.Installers
                 return;
             }
             Container.BindInterfacesAndSelfTo<ReplayVideoRenderer>().AsSingle().NonLazy();
+            Container.BindInterfacesAndSelfTo<ReplayAudioRenderer>().AsSingle().NonLazy();
             Container.BindInterfacesAndSelfTo<ReplayProgressUI>().AsSingle().NonLazy();
         }
     }

@@ -265,6 +265,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AffinityPatches\AutoPauseStealthPatch.cs" />
     <Compile Include="AffinityPatches\BeatLeaderWarningPatch.cs" />
     <Compile Include="AffinityPatches\ScoreSaberWarningPatch.cs" />
     <Compile Include="Installers\AppInstaller.cs" />
@@ -272,9 +273,12 @@
     <Compile Include="Installers\RenderInstaller.cs" />
     <Compile Include="Plugin.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Render\AudioCaptureFilter.cs" />
     <Compile Include="Render\EncoderHelpers.cs" />
     <Compile Include="Render\FfmpegPipe.cs" />
     <Compile Include="Render\RenderCameraEffect.cs" />
+    <Compile Include="Render\RenderManager.cs" />
+    <Compile Include="Render\ReplayAudioRenderer.cs" />
     <Compile Include="Render\ReplayProgressUI.cs" />
     <Compile Include="Render\ReplayRenderSettings.cs" />
     <Compile Include="Render\ReplayVideoRenderer.cs" />
