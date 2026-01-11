@@ -1,5 +1,4 @@
 ﻿using IPA.Utilities;
-using RenderMod.Render;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -62,8 +61,13 @@ public class FFmpegPipe
 
         try
         {
-            ffmpegInput?.Flush();
-            ffmpegInput?.Close();
+            if (ffmpegInput != null)
+            {
+                ffmpegInput.Flush();
+                ffmpegInput.Close();
+                ffmpegInput.Dispose();
+                ffmpegInput = null;
+            }
         }
         catch (Exception ex)
         {
@@ -72,49 +76,96 @@ public class FFmpegPipe
 
         try
         {
-            if (!ffmpeg.HasExited)
+            if (ffmpeg != null && !ffmpeg.HasExited)
+            {
                 ffmpeg.WaitForExit();
+            }
         }
         catch (Exception ex)
         {
             Debug.LogWarning($"Error waiting for FFmpeg to exit: {ex.Message}");
         }
 
-        ffmpeg.Dispose();
-    }
-
-    public void RemuxRawH264ToMp4(string rawH264Path, string outputMp4Path)
-    {
-        var ffm = new Process();
-        ffm.StartInfo.FileName = Path.Combine(UnityGame.LibraryPath, "ffmpeg.exe");
-        ffm.StartInfo.Arguments =
-            $"-y -i \"{rawH264Path}\" " +
-            "-c:v copy " +
-            $"\"{outputMp4Path}\"";
-        ffm.StartInfo.UseShellExecute = false;
-        ffm.StartInfo.CreateNoWindow = true;
-        ffm.Start();
-        ffm.WaitForExit();
-    }
-
-    public void AddAudioToMp4(string videoMp4Path, string audioPath, string finalMp4Path)
-    {
-        if (!File.Exists(audioPath))
+        if (ffmpeg != null)
         {
+            ffmpeg.Dispose();
+            ffmpeg = null;
+        }
+    }
+
+
+    public static void RemuxRawH264ToMp4(string rawH264Path, string outputMp4Path, int fps)
+    {
+        if (!File.Exists(rawH264Path))
+        {
+            Debug.LogError($"Raw H.264 file not found: {rawH264Path}");
             return;
         }
 
-        int audioBitrate = ReplayRenderSettings.AudioBitrateKbps;
+        var ffm = new Process();
+        ffm.StartInfo.FileName = Path.Combine(UnityGame.LibraryPath, "ffmpeg.exe");
+
+        ffm.StartInfo.Arguments =
+            $"-y -r {fps} -f h264 -i \"{rawH264Path}\" " +
+            $"-c:v copy \"{outputMp4Path}\"";
+
+        ffm.StartInfo.UseShellExecute = false;
+        ffm.StartInfo.CreateNoWindow = true;
+        ffm.StartInfo.RedirectStandardError = true;
+
+        ffm.ErrorDataReceived += (s, e) =>
+        {
+            if (!string.IsNullOrEmpty(e.Data))
+                Debug.Log($"[FFmpeg] {e.Data}");
+        };
+
+        ffm.Start();
+        ffm.BeginErrorReadLine();
+        ffm.WaitForExit();
+    }
+
+    public static void AddAudioToMp4(string videoMp4Path, string audioPath, string finalMp4Path, int audioBitrateKbps)
+    {
+        if (!File.Exists(videoMp4Path))
+        {
+            Debug.LogError($"Video MP4 not found: {videoMp4Path}");
+            return;
+        }
+
+        if (!File.Exists(audioPath))
+        {
+            Debug.LogError($"Audio WAV not found: {audioPath}");
+            return;
+        }
 
         var ffm = new Process();
         ffm.StartInfo.FileName = Path.Combine(UnityGame.LibraryPath, "ffmpeg.exe");
+
         ffm.StartInfo.Arguments =
-            $"-y -i \"{videoMp4Path}\" -i \"{audioPath}\" -c:v copy -c:a aac -b:a {audioBitrate}k -shortest \"{finalMp4Path}\"";
+            $"-y -i \"{videoMp4Path}\" -i \"{audioPath}\" " +
+            $"-c:v copy -c:a aac -b:a {audioBitrateKbps}k -shortest \"{finalMp4Path}\"";
+
         ffm.StartInfo.UseShellExecute = false;
         ffm.StartInfo.CreateNoWindow = true;
+        ffm.StartInfo.RedirectStandardError = true;
+
+        ffm.ErrorDataReceived += (s, e) =>
+        {
+            if (!string.IsNullOrEmpty(e.Data))
+                Debug.Log($"[FFmpeg] {e.Data}");
+        };
+
         ffm.Start();
+        ffm.BeginErrorReadLine();
         ffm.WaitForExit();
 
-        File.Delete(videoMp4Path);
+        try
+        {
+            File.Delete(videoMp4Path);
+        }
+        catch (Exception ex)
+        {
+            Debug.LogWarning($"Failed to delete intermediate MP4: {ex}");
+        }
     }
 }
