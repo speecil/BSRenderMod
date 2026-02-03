@@ -1,7 +1,6 @@
 using IPA.Utilities;
 using System.Diagnostics;
 using System.IO;
-using RenderMod.UI;
 
 namespace RenderMod.Render
 {
