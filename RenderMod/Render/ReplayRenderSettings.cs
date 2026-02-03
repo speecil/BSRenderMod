@@ -1,4 +1,4 @@
-﻿using IPA.Utilities;
+using IPA.Utilities;
 using System.IO;
 
 namespace RenderMod.Render
@@ -25,10 +25,10 @@ namespace RenderMod.Render
 
         // quality
         public static QualityPreset Preset = QualityPreset.Medium; // default preset
-        public static int BitrateKbps = 8000; // always respected, regardless of preset
+        public static int BitrateKbps = 5000; // always respected, regardless of preset
 
         // encoding
-        public static string VideoCodec = "auto"; // unused (i doubt people have different encoders available)
+        public static string VideoCodec = "h264"; // unused (i doubt people have different encoders available) || AmeRed: let the people choose what they want :)
         public static string PixelFormat = "yuv420p";
         public static bool IncludeAudio = true; // unused, always true for now
         public static string AudioCodec = "aac"; // unused, always aac for now
