@@ -1,4 +1,4 @@
-﻿using RenderMod.Render;
+using RenderMod.Render;
 using RenderMod.Util;
 using SiraUtil.Affinity;
 using SiraUtil.Logging;
@@ -68,12 +68,13 @@ public class ReplayVideoRenderer : ILateDisposable, IAffinity, ILateTickable
 
         var renderRoot = ReplayRenderSettings.RenderRoot;
         Directory.CreateDirectory(Path.Combine(renderRoot, "Unfinished"));
-
+        
+        string codec = ReplayRenderSettings.VideoCodec;
         var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
         _unfinishedPath = Path.Combine(
             renderRoot,
             "Unfinished",
-            Safe($"replay_{_beatmapLevel.songName}-{_beatmapKey.difficulty}_{timestamp}_video.h264")
+            Safe($"replay_{_beatmapLevel.songName}-{_beatmapKey.difficulty}_{timestamp}_video.{codec}")
         );
 
         _frameBuffers = new byte[BufferCount][];
