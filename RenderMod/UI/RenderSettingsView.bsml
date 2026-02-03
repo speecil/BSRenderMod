@@ -6,6 +6,9 @@
 					<!-- Preset Dropdown -->
 					<text text="Select a quality level" font-size="4" font-style="Bold" align="Center" color="#FFFFFF"/>
 					<dropdown-list-setting bind-value="true" apply-on-change="true" id='presetDropdown' value='preset-option' options='preset-options' text='Quality' on-change='OnPresetChanged'/>
+					<!-- Video Codec Dropdown -->
+					<text text="Select the video codec" font-size="4" font-style="Bold" align="Center" color="#FFFFFF"/>
+					<dropdown-list-setting bind-value="true" apply-on-change="true" id='videoCodecDropdown' value='video-codec' options='video-codec-options' text='Video Codec' on-change='OnVideoCodecChanged'/>
 					<text id="qualitywarningText" text="" align="Center" active="true" font-size="3" font-color="red" />
 				</vertical>
 			</tab>
@@ -20,12 +23,12 @@
 				<!-- FPS -->
 				<text text="FPS Settings" font-size="4" font-style="Bold" align="Center" color="#FFFFFF"/>
 				<vertical spacing="2" align="Center">
-					<increment-setting bind-value="true" text="Render FPS" id="fps" min="30" max="360" increment="10" integer-only="true" apply-on-change="true" value="fps" on-change="OnFPSChanged"/>
+					<increment-setting bind-value="true" text="Render FPS" id="fps" min="30" max="480" increment="30" integer-only="true" apply-on-change="true" value="fps" on-change="OnFPSChanged"/>
 				</vertical>
 
 				<!-- Bitrate -->
 				<text text="Bitrate Settings" font-size="4" font-style="Bold" align="Center" color="#FFFFFF"/>
-				<increment-setting bind-value="true" text="Video Bitrate (kbps)" id="bitrate" min="1000" max="50000" increment="500" integer-only="true" apply-on-change="true" value="bitrate" on-change="OnBitrateChanged"/>
+				<increment-setting bind-value="true" text="Video Bitrate (kbps)" id="bitrate" min="5000" max="150000" increment="5000" integer-only="true" apply-on-change="true" value="bitrate" on-change="OnBitrateChanged"/>
 				<increment-setting bind-value="true" text="Audio Bitrate (kbps)" id="audioBitrate" min="64" max="320" increment="32" integer-only="true" apply-on-change="true" value="audioBitrate" on-change="OnAudioBitrateChanged"/>
 				<text id="videowarningText" text="" align="Center" active="true" font-size="3" font-color="red" />
 			</vertical>
