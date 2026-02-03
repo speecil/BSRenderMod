@@ -25,7 +25,7 @@ namespace RenderMod.Render
 
         // quality
         public static QualityPreset Preset = QualityPreset.Medium; // default preset
-        public static int BitrateKbps = 5000; // always respected, regardless of preset
+        public static int BitrateKbps = 10000; // always respected, regardless of preset
 
         // encoding
         public static string VideoCodec = "h264"; // unused (i doubt people have different encoders available) || AmeRed: let the people choose what they want :)
