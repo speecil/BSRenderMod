@@ -1,7 +1,8 @@
-﻿using IPA.Utilities;
+using IPA.Utilities;
 using System;
 using System.Diagnostics;
 using System.IO;
+using RenderMod.Render;
 using Debug = UnityEngine.Debug;
 
 public class FFmpegPipe
@@ -94,19 +95,20 @@ public class FFmpegPipe
     }
 
 
-    public static void RemuxRawH264ToMp4(string rawH264Path, string outputMp4Path, int fps)
+    public static void RemuxRawStreamToMp4(string rawStreamPath, string outputMp4Path, int fps)
     {
-        if (!File.Exists(rawH264Path))
+        if (!File.Exists(rawStreamPath))
         {
-            Debug.LogError($"Raw H.264 file not found: {rawH264Path}");
+            Debug.LogError($"Raw video file not found: {rawStreamPath}");
             return;
         }
 
         var ffm = new Process();
         ffm.StartInfo.FileName = Path.Combine(UnityGame.LibraryPath, "ffmpeg.exe");
 
+        string codec = ReplayRenderSettings.VideoCodec;
         ffm.StartInfo.Arguments =
-            $"-y -r {fps} -f h264 -i \"{rawH264Path}\" " +
+            $"-y -r {fps} -f {codec} -i \"{rawStreamPath}\" " +
             $"-c:v copy \"{outputMp4Path}\"";
 
         ffm.StartInfo.UseShellExecute = false;
