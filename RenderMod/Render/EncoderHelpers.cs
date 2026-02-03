@@ -1,6 +1,7 @@
-﻿using IPA.Utilities;
+using IPA.Utilities;
 using System.Diagnostics;
 using System.IO;
+using RenderMod.UI;
 
 namespace RenderMod.Render
 {
@@ -8,11 +9,24 @@ namespace RenderMod.Render
     {
         private static readonly string FFmpegPath =
             Path.Combine(UnityGame.LibraryPath, "ffmpeg.exe");
-
+        
         public static string SelectBestEncoder()
         {
             string encodersOutput = GetEncodersOutput();
 
+            if (ReplayRenderSettings.VideoCodec == "hevc")
+            {
+                if (IsEncoderUsable("hevc_nvenc", encodersOutput))
+                    return "hevc_nvenc";
+
+                if (IsEncoderUsable("hevc_amf", encodersOutput))
+                    return "hevc_amf";
+
+                if (IsEncoderUsable("hevc_qsv", encodersOutput))
+                    return "hevc_qsv";
+
+                return "libx264";
+            }
             if (IsEncoderUsable("h264_nvenc", encodersOutput))
                 return "h264_nvenc";
 
