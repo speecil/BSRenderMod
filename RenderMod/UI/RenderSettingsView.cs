@@ -1,4 +1,4 @@
-﻿using BeatSaberMarkupLanguage.Attributes;
+using BeatSaberMarkupLanguage.Attributes;
 using BeatSaberMarkupLanguage.Components;
 using BeatSaberMarkupLanguage.Components.Settings;
 using BeatSaberMarkupLanguage.ViewControllers;
@@ -23,7 +23,7 @@ namespace RenderMod.UI
         [UIComponent("videowarningText")] private TMPro.TextMeshProUGUI videoWarningText;
         [UIComponent("camerawarningText")] private TMPro.TextMeshProUGUI cameraWarningText;
         [UIComponent("otherwarningText")] private TMPro.TextMeshProUGUI otherWarningText;
-
+        
         [UIValue("resolution")]
         private string resolution
         {
@@ -37,6 +37,7 @@ namespace RenderMod.UI
                     case 1920 when ReplayRenderSettings.Height == 1080: return "1080p";
                     case 2560 when ReplayRenderSettings.Height == 1440: return "1440p";
                     case 3840 when ReplayRenderSettings.Height == 2160: return "4K";
+                    case 7680 when ReplayRenderSettings.Height == 4320: return "8K";
                     default:
                         _log.Warn($"Unknown resolution setting: {ReplayRenderSettings.Width}x{ReplayRenderSettings.Height}, defaulting to 1080p");
                         return "1080p";
@@ -52,6 +53,7 @@ namespace RenderMod.UI
                     case "1080p": ReplayRenderSettings.Width = 1920; ReplayRenderSettings.Height = 1080; break;
                     case "1440p": ReplayRenderSettings.Width = 2560; ReplayRenderSettings.Height = 1440; break;
                     case "4K": ReplayRenderSettings.Width = 3840; ReplayRenderSettings.Height = 2160; break;
+                    case "8K": ReplayRenderSettings.Width = 7680; ReplayRenderSettings.Height = 4320; break;
                     default:
                         _log.Warn($"Unknown resolution option: {value}, defaulting to 1080p");
                         ReplayRenderSettings.Width = 1920;
@@ -72,13 +74,15 @@ namespace RenderMod.UI
         [UIValue("bitrate")] private int bitrate = ReplayRenderSettings.BitrateKbps;
         [UIValue("audioBitrate")] private int audioBitrate = ReplayRenderSettings.AudioBitrateKbps;
         [UIValue("extraFFmpegArgs")] private string extraFFmpegArgs = ReplayRenderSettings.ExtraFFmpegArgs;
-
+        
+        [UIValue("video-codec-options")] private List<string> videoCodecs = new List<string>() { "h264", "hevc", "av1" };
+        [UIValue("video-codec")] private string videoCodec = ReplayRenderSettings.VideoCodec;
         [UIValue("preset-options")] private List<string> presetOptions = new List<string>() { "Low", "Medium", "High" };
         [UIValue("preset-option")] private string currentPreset = ReplayRenderSettings.Preset.ToString();
         [UIValue("resolution-options")]
         private List<string> resolutionOptions = new List<string>()
         {
-            "360p", "480p", "720p", "1080p", "1440p", "4K"
+            "360p", "480p", "720p", "1080p", "1440p", "4K", "8K"
         };
 
         private List<object> _cameraOptions = new List<object>();
@@ -106,14 +110,16 @@ namespace RenderMod.UI
 
         [UIComponent("cameraType-specifier")] private DropDownListSetting cameraTypeDropDown;
 
-        private readonly string FourKWarning = "4K renders require significant processing power and disk space.";
+        private readonly string FourKWarning = "4K/8K renders require significant processing power and disk space.";
+        private readonly string EightKWarning = "8K renders require the use of a HEVC encoder to render properly.";
         private readonly string FPSWarning = "High FPS values increase file size and CPU usage.";
         private readonly string BitrateWarning = "Bitrates over 10,000 kbps may cause instability or lag.";
         private readonly string ExtraArgsWarning = "Extra FFmpeg arguments can cause instability or crashes.";
         private readonly string PresetWarning = "High Quality preset uses substantial storage and processing.";
+        private readonly string CodecWarning = "AV1 is chosen as the current codec! You need either an RTX 40 series GPU or an AMD RX 7000 series GPU.";
         private readonly string NonMainCameraWarning = "Camera is not called \"Main\". Ensure this is the correct camera.";
         private readonly string NoneCameraTypeWarning = "No camera mod installed, main camera will be used.";
-
+        
         [UIAction("OnResolutionChanged")]
         private void OnResolutionChanged(string value)
         {
@@ -183,6 +189,13 @@ namespace RenderMod.UI
                 ReplayRenderSettings.Preset = preset;
                 currentPreset = value;
             }
+            UpdateWarnings();
+        }
+        
+        [UIAction("OnVideoCodecChanged")]
+        private void OnVideoCodecChanged(string value)
+        {
+            ReplayRenderSettings.VideoCodec = value;
             UpdateWarnings();
         }
 
@@ -268,13 +281,18 @@ namespace RenderMod.UI
             int currentBitrate = ReplayRenderSettings.BitrateKbps;
             string currentExtraArgs = ReplayRenderSettings.ExtraFFmpegArgs;
             string currentPresetString = ReplayRenderSettings.Preset.ToString();
+            string currentCodec = ReplayRenderSettings.VideoCodec;
             string cameraName = ReplayRenderSettings.SpecifiedCameraName;
             string cameraType = ReplayRenderSettings.CameraType;
 
-            if (currentResolution == "4K")
+            if (currentResolution == "4K" || currentResolution == "8K")
                 VideoWarnings.Add(FourKWarning);
+            if (currentResolution == "8K")
+                VideoWarnings.Add(EightKWarning);
             if (currentPresetString == QualityPreset.High.ToString())
                 QualityWarnings.Add(PresetWarning);
+            if (currentCodec == "av1")
+                QualityWarnings.Add(CodecWarning);
 
             if (currentFps > 60)
                 VideoWarnings.Add(FPSWarning);
