@@ -75,7 +75,7 @@ namespace RenderMod.UI
         [UIValue("audioBitrate")] private int audioBitrate = ReplayRenderSettings.AudioBitrateKbps;
         [UIValue("extraFFmpegArgs")] private string extraFFmpegArgs = ReplayRenderSettings.ExtraFFmpegArgs;
         
-        [UIValue("video-codec-options")] private List<string> videoCodecs = new List<string>() { "h264", "hevc" };
+        [UIValue("video-codec-options")] private List<string> videoCodecs = new List<string>() { "h264", "hevc", "av1" };
         [UIValue("video-codec")] private string videoCodec = ReplayRenderSettings.VideoCodec;
         [UIValue("preset-options")] private List<string> presetOptions = new List<string>() { "Low", "Medium", "High" };
         [UIValue("preset-option")] private string currentPreset = ReplayRenderSettings.Preset.ToString();
@@ -110,12 +110,13 @@ namespace RenderMod.UI
 
         [UIComponent("cameraType-specifier")] private DropDownListSetting cameraTypeDropDown;
 
-        private readonly string FourKWarning = "4K renders require significant processing power and disk space.";
+        private readonly string FourKWarning = "4K/8K renders require significant processing power and disk space.";
         private readonly string EightKWarning = "8K renders require the use of a HEVC encoder to render properly.";
         private readonly string FPSWarning = "High FPS values increase file size and CPU usage.";
         private readonly string BitrateWarning = "Bitrates over 10,000 kbps may cause instability or lag.";
         private readonly string ExtraArgsWarning = "Extra FFmpeg arguments can cause instability or crashes.";
         private readonly string PresetWarning = "High Quality preset uses substantial storage and processing.";
+        private readonly string CodecWarning = "AV1 is chosen as the current codec! You need either an RTX 40 series GPU or an AMD RX 7000 series GPU.";
         private readonly string NonMainCameraWarning = "Camera is not called \"Main\". Ensure this is the correct camera.";
         private readonly string NoneCameraTypeWarning = "No camera mod installed, main camera will be used.";
         
@@ -195,6 +196,7 @@ namespace RenderMod.UI
         private void OnVideoCodecChanged(string value)
         {
             ReplayRenderSettings.VideoCodec = value;
+            UpdateWarnings();
         }
 
         [UIComponent("encoder-test-text")] private TMPro.TextMeshProUGUI encoderTestText;
@@ -279,15 +281,18 @@ namespace RenderMod.UI
             int currentBitrate = ReplayRenderSettings.BitrateKbps;
             string currentExtraArgs = ReplayRenderSettings.ExtraFFmpegArgs;
             string currentPresetString = ReplayRenderSettings.Preset.ToString();
+            string currentCodec = ReplayRenderSettings.VideoCodec;
             string cameraName = ReplayRenderSettings.SpecifiedCameraName;
             string cameraType = ReplayRenderSettings.CameraType;
 
-            if (currentResolution == "4K")
+            if (currentResolution == "4K" || currentResolution == "8K")
                 VideoWarnings.Add(FourKWarning);
             if (currentResolution == "8K")
                 VideoWarnings.Add(EightKWarning);
             if (currentPresetString == QualityPreset.High.ToString())
                 QualityWarnings.Add(PresetWarning);
+            if (currentCodec == "av1")
+                QualityWarnings.Add(CodecWarning);
 
             if (currentFps > 60)
                 VideoWarnings.Add(FPSWarning);
