@@ -26,6 +26,19 @@ namespace RenderMod.Render
 
                 return "libx264";
             }
+            if (ReplayRenderSettings.VideoCodec == "av1")
+            {
+                if (IsEncoderUsable("av1_nvenc", encodersOutput))
+                    return "av1_nvenc";
+
+                if (IsEncoderUsable("av1_amf", encodersOutput))
+                    return "av1_amf";
+
+                if (IsEncoderUsable("av1_qsv", encodersOutput))
+                    return "av1_qsv";
+
+                return "libx264";
+            }
             if (IsEncoderUsable("h264_nvenc", encodersOutput))
                 return "h264_nvenc";
 
