@@ -8,7 +8,7 @@ namespace RenderMod.Render
     {
         private static readonly string FFmpegPath =
             Path.Combine(UnityGame.LibraryPath, "ffmpeg.exe");
-        
+
         public static string SelectBestEncoder()
         {
             string encodersOutput = GetEncodersOutput();

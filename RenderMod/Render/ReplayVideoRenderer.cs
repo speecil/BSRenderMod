@@ -68,7 +68,7 @@ public class ReplayVideoRenderer : ILateDisposable, IAffinity, ILateTickable
 
         var renderRoot = ReplayRenderSettings.RenderRoot;
         Directory.CreateDirectory(Path.Combine(renderRoot, "Unfinished"));
-        
+
         string codec = ReplayRenderSettings.VideoCodec;
         var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
         _unfinishedPath = Path.Combine(

@@ -2,13 +2,11 @@ using IPA.Logging;
 using RenderMod.AffinityPatches;
 using RenderMod.Util;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using UnityEngine.SceneManagement;
-using BLScore = BeatLeader.Models.Score;
 
 namespace RenderMod.Render
 {
@@ -25,58 +23,6 @@ namespace RenderMod.Render
         public static RenderState currentState = RenderState.None;
 
         private static bool beatleaderRender = false;
-
-        public static bool QueueMode = false;
-
-        private static List<BLScore> BeatLeaderScoreQueue = new List<BLScore>();
-        private static List<object> ScoreSaberScoreQueue = new List<object>();
-
-        public static int GetQueueCount()
-        {
-            return BeatLeaderScoreQueue.Count + ScoreSaberScoreQueue.Count;
-        }
-
-        public static int QueueProgress = 0;
-
-        //   ScoreSaber.UI.Elements.Leaderboard.ScoreDetailView
-        //   _currentScore
-
-
-        //   BeatLeader.Components.ReplayPanel
-        //   _score
-
-        private static async Task BeginRenderQueue()
-        {
-            foreach (var score in ScoreSaberScoreQueue)
-            {
-                ScoreSaberWarningPatch.shouldNotInterfere = true;
-                ScoreSaberWarningPatch.instance.GetType()
-                    .GetField("_currentScore", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
-                    ?.SetValue(ScoreSaberWarningPatch.instance, score);
-                ScoreSaberWarningPatch.TargetMethod()?.Invoke(ScoreSaberWarningPatch.instance, null);
-                // wait for render to finish
-                while (currentState != RenderState.None)
-                {
-                    await Task.Delay(5000);
-                }
-                QueueProgress++;
-            }
-            foreach (var score in BeatLeaderScoreQueue)
-            {
-                BeatLeaderWarningPatch.shouldNotInterfere = true;
-                BeatLeaderWarningPatch.instance.GetType()
-                    .GetField("_score", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
-                    ?.SetValue(BeatLeaderWarningPatch.instance, score);
-                BeatLeaderWarningPatch.TargetMethod()?.Invoke(BeatLeaderWarningPatch.instance, null);
-                // wait for render to finish
-                while (currentState != RenderState.None)
-                {
-                    await Task.Delay(5000);
-                }
-                QueueProgress++;
-            }
-            QueueMode = false;
-        }
 
         public static void StartVideoRender(bool beatleader)
         {
@@ -129,7 +75,7 @@ namespace RenderMod.Render
 
             Directory.CreateDirectory(unfinishedDir);
             Directory.CreateDirectory(finishedDir);
-            
+
             var codec = ReplayRenderSettings.VideoCodec;
             var latestVideoFile = Directory.GetFiles(unfinishedDir, "*." + codec)
                 .Select(f => new FileInfo(f))

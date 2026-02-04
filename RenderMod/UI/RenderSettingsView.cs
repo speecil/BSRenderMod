@@ -23,7 +23,7 @@ namespace RenderMod.UI
         [UIComponent("videowarningText")] private TMPro.TextMeshProUGUI videoWarningText;
         [UIComponent("camerawarningText")] private TMPro.TextMeshProUGUI cameraWarningText;
         [UIComponent("otherwarningText")] private TMPro.TextMeshProUGUI otherWarningText;
-        
+
         [UIValue("resolution")]
         private string resolution
         {
@@ -41,7 +41,8 @@ namespace RenderMod.UI
                     default:
                         _log.Warn($"Unknown resolution setting: {ReplayRenderSettings.Width}x{ReplayRenderSettings.Height}, defaulting to 1080p");
                         return "1080p";
-                };
+                }
+                ;
             }
             set
             {
@@ -74,7 +75,7 @@ namespace RenderMod.UI
         [UIValue("bitrate")] private int bitrate = ReplayRenderSettings.BitrateKbps;
         [UIValue("audioBitrate")] private int audioBitrate = ReplayRenderSettings.AudioBitrateKbps;
         [UIValue("extraFFmpegArgs")] private string extraFFmpegArgs = ReplayRenderSettings.ExtraFFmpegArgs;
-        
+
         [UIValue("video-codec-options")] private List<string> videoCodecs = new List<string>() { "h264", "hevc", "av1" };
         [UIValue("video-codec")] private string videoCodec = ReplayRenderSettings.VideoCodec;
         [UIValue("preset-options")] private List<string> presetOptions = new List<string>() { "Low", "Medium", "High" };
@@ -119,7 +120,7 @@ namespace RenderMod.UI
         private readonly string CodecWarning = "AV1 is chosen as the current codec! You need either an RTX 40 series GPU or an AMD RX 7000 series GPU.";
         private readonly string NonMainCameraWarning = "Camera is not called \"Main\". Ensure this is the correct camera.";
         private readonly string NoneCameraTypeWarning = "No camera mod installed, main camera will be used.";
-        
+
         [UIAction("OnResolutionChanged")]
         private void OnResolutionChanged(string value)
         {
@@ -191,7 +192,7 @@ namespace RenderMod.UI
             }
             UpdateWarnings();
         }
-        
+
         [UIAction("OnVideoCodecChanged")]
         private void OnVideoCodecChanged(string value)
         {
