@@ -77,6 +77,10 @@ namespace RenderMod.Render
             Directory.CreateDirectory(finishedDir);
 
             var codec = ReplayRenderSettings.VideoCodec;
+            if (codec == "av1")
+            {
+                codec = "ivf";
+            }
             var latestVideoFile = Directory.GetFiles(unfinishedDir, "*." + codec)
                 .Select(f => new FileInfo(f))
                 .OrderByDescending(f => f.LastWriteTime)

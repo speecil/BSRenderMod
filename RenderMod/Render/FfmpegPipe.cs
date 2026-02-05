@@ -107,6 +107,10 @@ public class FFmpegPipe
         ffm.StartInfo.FileName = Path.Combine(UnityGame.LibraryPath, "ffmpeg.exe");
 
         string codec = ReplayRenderSettings.VideoCodec;
+        if (codec == "av1")
+        {
+            codec = "ivf";
+        }
         ffm.StartInfo.Arguments =
             $"-y -r {fps} -f {codec} -i \"{rawStreamPath}\" " +
             $"-c:v copy \"{outputMp4Path}\"";

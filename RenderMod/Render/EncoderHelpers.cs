@@ -24,8 +24,9 @@ namespace RenderMod.Render
                 if (IsEncoderUsable("hevc_qsv", encodersOutput))
                     return "hevc_qsv";
 
-                return "libx264";
+                return "libx265";
             }
+            
             if (ReplayRenderSettings.VideoCodec == "av1")
             {
                 if (IsEncoderUsable("av1_nvenc", encodersOutput))
@@ -36,8 +37,8 @@ namespace RenderMod.Render
 
                 if (IsEncoderUsable("av1_qsv", encodersOutput))
                     return "av1_qsv";
-
-                return "libx264";
+                
+                return "libaom-av1";
             }
             if (IsEncoderUsable("h264_nvenc", encodersOutput))
                 return "h264_nvenc";
@@ -141,6 +142,10 @@ namespace RenderMod.Render
                     {
                         presetArgs = $"-preset veryfast -global_quality 30 {bitrateArg}";
                     }
+                    else if (encoder.Contains("aom"))
+                    {
+                        presetArgs = $"-cpu-used 6 -crf 28 {bitrateArg}";
+                    }
                     else
                     {
                         presetArgs = $"-preset ultrafast -crf 28 {bitrateArg}";
@@ -160,6 +165,10 @@ namespace RenderMod.Render
                     {
                         presetArgs = $"-preset medium -global_quality 25 {bitrateArg}";
                     }
+                    else if (encoder.Contains("aom"))
+                    {
+                        presetArgs = $"-cpu-used 6 -crf 23 {bitrateArg}";
+                    }
                     else
                     {
                         presetArgs = $"-preset medium -crf 23 {bitrateArg}";
@@ -178,6 +187,10 @@ namespace RenderMod.Render
                     else if (encoder.Contains("qsv"))
                     {
                         presetArgs = $"-preset slow -global_quality 20 {bitrateArg}";
+                    }
+                    else if (encoder.Contains("aom"))
+                    {
+                        presetArgs = $"-cpu-used 6 -crf 18 {bitrateArg}";
                     }
                     else
                     {

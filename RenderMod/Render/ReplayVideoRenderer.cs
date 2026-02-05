@@ -70,6 +70,10 @@ public class ReplayVideoRenderer : ILateDisposable, IAffinity, ILateTickable
         Directory.CreateDirectory(Path.Combine(renderRoot, "Unfinished"));
 
         string codec = ReplayRenderSettings.VideoCodec;
+        if (codec == "av1")
+        {
+            codec = "ivf";
+        }
         var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
         _unfinishedPath = Path.Combine(
             renderRoot,
