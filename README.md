@@ -14,6 +14,7 @@
   - Resolution (supports output higher than your display resolution)  
   - Frame rate (FPS)  
   - Camera settings (Camera2, ReeCamera, None or Default)
+  - Encoding (h.264, HEVC, AV1)
 - Output files saved to:  
   ```
   Beat Saber/Renders/Finished
@@ -37,4 +38,3 @@ From there, you can:
 
   *(The mod will not run unless using `-fpfc` or the first person flying controller)*
 - Ensure that the replay files being played are not broken or your replay playback mod is broken, this mod does not handle the replays themselves
-- Audio is currently **NOT** recorded from the game, and is instead muxed in from the beatmaps ogg/egg file

@@ -47,12 +47,12 @@ namespace RenderMod.Render
             currentState = RenderState.Audio;
             if (beatleaderRender)
             {
-                _log.Notice("Starting video render for BeatLeader replay");
+                _log.Notice("Starting audio render for BeatLeader replay");
                 BeatLeaderWarningPatch.TargetMethod()?.Invoke(BeatLeaderWarningPatch.instance, null);
             }
             else
             {
-                _log.Notice("Starting video render for ScoreSaber replay");
+                _log.Notice("Starting audio render for ScoreSaber replay");
                 ScoreSaberWarningPatch.TargetMethod()?.Invoke(ScoreSaberWarningPatch.instance, null);
             }
         }
@@ -105,14 +105,19 @@ namespace RenderMod.Render
 
             try
             {
+                _log.Notice($"Muxing raw video stream to mp4...");
                 FFmpegPipe.RemuxRawStreamToMp4(latestVideoFile, tempVideoMp4, ReplayRenderSettings.FPS);
                 _log.Notice($"Raw video stream remuxed to MP4: {tempVideoMp4}");
-
+                
+                _log.Notice($"Muxing audio and video into a final mp4 file...");
                 FFmpegPipe.AddAudioToMp4(tempVideoMp4, latestAudioFile, finalMp4, ReplayRenderSettings.AudioBitrateKbps);
                 _log.Notice($"Final muxed MP4 created: {finalMp4}");
 
                 Process.Start("explorer.exe", $"/select,\"{finalMp4}\"");
                 DingPlayer.shouldPlayDing = true;
+                //deleting temp files
+                File.Delete(latestVideoFile);
+                File.Delete(latestAudioFile);
             }
             catch (Exception ex)
             {
@@ -151,11 +156,22 @@ namespace RenderMod.Render
                 case RenderState.None:
                     break;
                 case RenderState.Video:
+                    
                     if (scene2.name.ToLower() != "gamecore")
                     {
                         _log.Notice("Exiting gameplay scene, starting audio capture in 2 seconds");
                         // leaving gameplay (render end)
-                        Task.Delay(2000).ContinueWith(t => StartAudioCapture());
+                        var codec = ReplayRenderSettings.VideoCodec;
+                        if (codec == "av1") //have to delay audio capture a bit more when using av1, ffmpeg takes longer to finish doing its av1 shit
+                        {
+                            _log.Notice("AV1 detected, waiting 15 seconds instead of 2...");
+                            Task.Delay(15000).ContinueWith(t => StartAudioCapture()); //ideally wait for ffmpeg exit and then delay by 2 seconds, fml
+                        }
+                        else
+                        {
+                            Task.Delay(2000).ContinueWith(t => StartAudioCapture());
+                        }
+                        
                     }
                     break;
                 case RenderState.Audio:

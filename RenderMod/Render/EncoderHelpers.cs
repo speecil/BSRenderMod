@@ -1,6 +1,8 @@
+using System;
 using IPA.Utilities;
 using System.Diagnostics;
 using System.IO;
+using Debug = UnityEngine.Debug;
 
 namespace RenderMod.Render
 {
@@ -23,7 +25,7 @@ namespace RenderMod.Render
 
                 if (IsEncoderUsable("hevc_qsv", encodersOutput))
                     return "hevc_qsv";
-
+                
                 return "libx265";
             }
             
@@ -48,7 +50,7 @@ namespace RenderMod.Render
 
             if (IsEncoderUsable("h264_qsv", encodersOutput))
                 return "h264_qsv";
-
+            
             return "libx264";
         }
 
@@ -77,12 +79,14 @@ namespace RenderMod.Render
                 return string.Empty;
             }
         }
-
+        
         private static bool IsEncoderUsable(string encoder, string encodersOutput)
         {
             if (!encodersOutput.Contains(encoder))
+            {
+                Debug.LogError($"{encoder} is unavailable!");
                 return false;
-
+            }
             return TestEncoder(encoder);
         }
 
@@ -95,7 +99,7 @@ namespace RenderMod.Render
                 proc.StartInfo.Arguments =
                     $"-hide_banner -loglevel error " +
                     $"-f lavfi -i testsrc=size=1280x720:rate=30 " +
-                    $"-c:v {encoder} -t 1 -f null -";
+                    $"-vf format=yuv420p -c:v {encoder} -t 1 -f null -";
 
                 proc.StartInfo.RedirectStandardError = true;
                 proc.StartInfo.UseShellExecute = false;
@@ -130,7 +134,11 @@ namespace RenderMod.Render
             switch (ReplayRenderSettings.Preset)
             {
                 case QualityPreset.Low:
-                    if (encoder.Contains("nvenc"))
+                    if (encoder.Contains("av1_nvenc"))
+                    {
+                        presetArgs = $"-preset fast -rc vbr {bitrateArg}";
+                    }
+                    else if (encoder.Contains("nvenc"))
                     {
                         presetArgs = $"-preset fast -rc vbr_hq -cq 28 {bitrateArg}";
                     }
@@ -153,7 +161,11 @@ namespace RenderMod.Render
                     break;
 
                 case QualityPreset.Medium:
-                    if (encoder.Contains("nvenc"))
+                    if (encoder.Contains("av1_nvenc"))
+                    {
+                        presetArgs = $"-preset medium -rc vbr {bitrateArg}";
+                    }
+                    else if (encoder.Contains("nvenc"))
                     {
                         presetArgs = $"-preset medium -rc vbr_hq -cq 23 {bitrateArg}";
                     }
@@ -176,7 +188,11 @@ namespace RenderMod.Render
                     break;
 
                 case QualityPreset.High:
-                    if (encoder.Contains("nvenc"))
+                    if (encoder.Contains("av1_nvenc"))
+                    {
+                        presetArgs = $"-preset slow -rc vbr -tune hq {bitrateArg}";
+                    }
+                    else if (encoder.Contains("nvenc"))
                     {
                         presetArgs = $"-preset slow -rc vbr_hq -cq 18 {bitrateArg}";
                     }
