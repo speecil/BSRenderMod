@@ -1,4 +1,5 @@
 using IPA.Utilities;
+using Newtonsoft.Json.Linq;
 using System.IO;
 
 namespace RenderMod.Render
@@ -12,36 +13,26 @@ namespace RenderMod.Render
 
     public static class ReplayRenderSettings
     {
+        private static readonly string SettingsPath = Path.Combine(UnityGame.UserDataPath, "RenderModSettings.json");
+
         public static bool RenderEnabled = false;
-
         public static string CameraType = "None";
+        public static string SpecifiedCameraName = "Main"; // Camera2's default camera name
 
-        // general
         public static int Width = 1920;
         public static int Height = 1080;
         public static string AspectRatio = "16:9";
         public static bool PortraitToggle = false;
-        
-        public static int FPS = 60; // default FPS for rendering, can be changed to 120 or whatever
+        public static int FPS = 60;
 
-        public static string SpecifiedCameraName = "Main"; // Camera2 default camera name is "Main"
-
-        // quality
-        public static QualityPreset Preset = QualityPreset.Medium; // default preset
-        public static int BitrateKbps = 10000; // always respected, regardless of preset
-
-        // encoding
+        public static QualityPreset Preset = QualityPreset.Medium;
+        public static int BitrateKbps = 10000;
         public static string VideoCodec = "h264";
         public static string PixelFormat = "yuv420p";
-        public static bool IncludeAudio = true; // unused, always true for now
-        public static string AudioCodec = "aac"; // unused, always aac for now
         public static int AudioBitrateKbps = 320;
 
-        // paths
         public static string RenderRoot = "Renders";
-
-        // advanced
-        public static string ExtraFFmpegArgs = ""; // additional arguments for ffmpeg
+        public static string ExtraFFmpegArgs = "";
 
         static ReplayRenderSettings()
         {
@@ -50,60 +41,52 @@ namespace RenderMod.Render
 
         public static void LoadSettings()
         {
-            if (!File.Exists(UnityGame.UserDataPath + "/RenderModSettings.json"))
+            if (!File.Exists(SettingsPath))
             {
                 SaveSettings();
                 return;
             }
-            string jsonText = File.ReadAllText(UnityGame.UserDataPath + "/RenderModSettings.json");
-            Newtonsoft.Json.Linq.JObject settings = Newtonsoft.Json.Linq.JObject.Parse(jsonText);
-            RenderEnabled = settings.Value<bool?>("RenderEnabled") ?? RenderEnabled;
-            CameraType = settings.Value<string>("CameraType") ?? CameraType;
-            Width = settings.Value<int?>("Width") ?? Width;
-            Height = settings.Value<int?>("Height") ?? Height;
-            AspectRatio = settings.Value<string>("AspectRatio") ?? AspectRatio;
-            PortraitToggle = settings.Value<bool?>("Portrait") ?? PortraitToggle;
-            FPS = settings.Value<int?>("FPS") ?? FPS;
-            SpecifiedCameraName = settings.Value<string>("SpecifiedCameraName") ?? SpecifiedCameraName;
-            string presetStr = settings.Value<string>("Preset") ?? Preset.ToString();
-            if (System.Enum.TryParse<QualityPreset>(presetStr, out QualityPreset parsedPreset))
-            {
-                Preset = parsedPreset;
-            }
-            BitrateKbps = settings.Value<int?>("BitrateKbps") ?? BitrateKbps;
-            VideoCodec = settings.Value<string>("VideoCodec") ?? VideoCodec;
-            PixelFormat = settings.Value<string>("PixelFormat") ?? PixelFormat;
-            IncludeAudio = settings.Value<bool?>("IncludeAudio") ?? IncludeAudio;
-            AudioCodec = settings.Value<string>("AudioCodec") ?? AudioCodec;
-            AudioBitrateKbps = settings.Value<int?>("AudioBitrateKbps") ?? AudioBitrateKbps;
-            RenderRoot = settings.Value<string>("RenderRoot") ?? RenderRoot;
-            ExtraFFmpegArgs = settings.Value<string>("ExtraFFmpegArgs") ?? ExtraFFmpegArgs;
+
+            var s = JObject.Parse(File.ReadAllText(SettingsPath));
+            RenderEnabled = s.Value<bool?>("RenderEnabled") ?? RenderEnabled;
+            CameraType = s.Value<string>("CameraType") ?? CameraType;
+            SpecifiedCameraName = s.Value<string>("SpecifiedCameraName") ?? SpecifiedCameraName;
+            Width = s.Value<int?>("Width") ?? Width;
+            Height = s.Value<int?>("Height") ?? Height;
+            AspectRatio = s.Value<string>("AspectRatio") ?? AspectRatio;
+            PortraitToggle = s.Value<bool?>("PortraitToggle") ?? PortraitToggle;
+            FPS = s.Value<int?>("FPS") ?? FPS;
+            if (System.Enum.TryParse(s.Value<string>("Preset"), out QualityPreset preset))
+                Preset = preset;
+            BitrateKbps = s.Value<int?>("BitrateKbps") ?? BitrateKbps;
+            VideoCodec = s.Value<string>("VideoCodec") ?? VideoCodec;
+            PixelFormat = s.Value<string>("PixelFormat") ?? PixelFormat;
+            AudioBitrateKbps = s.Value<int?>("AudioBitrateKbps") ?? AudioBitrateKbps;
+            RenderRoot = s.Value<string>("RenderRoot") ?? RenderRoot;
+            ExtraFFmpegArgs = s.Value<string>("ExtraFFmpegArgs") ?? ExtraFFmpegArgs;
         }
 
         public static void SaveSettings()
         {
-            var settings = new Newtonsoft.Json.Linq.JObject
+            var s = new JObject
             {
                 ["RenderEnabled"] = RenderEnabled,
                 ["CameraType"] = CameraType,
+                ["SpecifiedCameraName"] = SpecifiedCameraName,
                 ["Width"] = Width,
                 ["Height"] = Height,
                 ["AspectRatio"] = AspectRatio,
                 ["PortraitToggle"] = PortraitToggle,
                 ["FPS"] = FPS,
-                ["SpecifiedCameraName"] = SpecifiedCameraName,
                 ["Preset"] = Preset.ToString(),
                 ["BitrateKbps"] = BitrateKbps,
                 ["VideoCodec"] = VideoCodec,
                 ["PixelFormat"] = PixelFormat,
-                ["IncludeAudio"] = IncludeAudio,
-                ["AudioCodec"] = AudioCodec,
                 ["AudioBitrateKbps"] = AudioBitrateKbps,
                 ["RenderRoot"] = RenderRoot,
                 ["ExtraFFmpegArgs"] = ExtraFFmpegArgs
             };
-            string jsonText = settings.ToString();
-            File.WriteAllText(UnityGame.UserDataPath + "/RenderModSettings.json", jsonText);
+            File.WriteAllText(SettingsPath, s.ToString());
         }
     }
 }

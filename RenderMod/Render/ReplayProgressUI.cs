@@ -1,73 +1,56 @@
-﻿using TMPro;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class ReplayProgressUI
+namespace RenderMod.Render
 {
-    private Canvas _canvas;
-    private TextMeshProUGUI _progressText;
-
-    public void Show()
+    internal class ReplayProgressUI
     {
-        if (_canvas != null) return; // already shown
+        private Canvas _canvas;
+        private TextMeshProUGUI _progressText;
 
-        // canvas
-        GameObject canvasGO = new GameObject("ReplayProgressCanvas");
-        _canvas = canvasGO.AddComponent<Canvas>();
-        _canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        _canvas.sortingOrder = 1000;
-
-        CanvasScaler scaler = canvasGO.AddComponent<CanvasScaler>();
-        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        scaler.referenceResolution = new Vector2(1920, 1080);
-
-        canvasGO.AddComponent<GraphicRaycaster>();
-
-        // big image for background lol
-        GameObject bgGO = new GameObject("Background");
-        bgGO.transform.SetParent(canvasGO.transform, false);
-        RectTransform bgRT = bgGO.AddComponent<RectTransform>();
-        bgRT.anchorMin = Vector2.zero;
-        bgRT.anchorMax = Vector2.one;
-        bgRT.offsetMin = Vector2.zero;
-        bgRT.offsetMax = Vector2.zero;
-        Image bgImg = bgGO.AddComponent<Image>();
-        bgImg.color = Color.black;
-
-        // progress
-        GameObject textGO = new GameObject("ProgressText");
-        textGO.transform.SetParent(canvasGO.transform, false);
-        _progressText = textGO.AddComponent<TextMeshProUGUI>();
-        RectTransform textRT = _progressText.GetComponent<RectTransform>();
-        textRT.anchorMin = new Vector2(0.5f, 0.5f);
-        textRT.anchorMax = new Vector2(0.5f, 0.5f);
-        textRT.anchoredPosition = Vector2.zero;
-        textRT.sizeDelta = new Vector2(600, 100);
-
-        _progressText.alignment = TextAlignmentOptions.Center;
-        _progressText.fontSize = 60;
-        _progressText.color = Color.white;
-        _progressText.text = "Rendering Replay: 0%";
-    }
-
-    public void UpdateProgress(float progress01, string message = null)
-    {
-        if (_progressText == null) return;
-        if (message != null)
+        public void Show()
         {
-            _progressText.text = message;
-            return;
+            if (_canvas != null)
+                return;
+
+            var canvasGO = new GameObject("ReplayProgressCanvas");
+            _canvas = canvasGO.AddComponent<Canvas>();
+            _canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            _canvas.sortingOrder = 1000;
+
+            var scaler = canvasGO.AddComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1920, 1080);
+
+            var background = new GameObject("Background").AddComponent<Image>();
+            background.transform.SetParent(canvasGO.transform, false);
+            background.rectTransform.anchorMin = Vector2.zero;
+            background.rectTransform.anchorMax = Vector2.one;
+            background.rectTransform.offsetMin = Vector2.zero;
+            background.rectTransform.offsetMax = Vector2.zero;
+            background.color = Color.black;
+
+            _progressText = new GameObject("ProgressText").AddComponent<TextMeshProUGUI>();
+            _progressText.transform.SetParent(canvasGO.transform, false);
+            _progressText.rectTransform.sizeDelta = new Vector2(600, 100);
+            _progressText.alignment = TextAlignmentOptions.Center;
+            _progressText.fontSize = 60;
+            _progressText.color = Color.white;
+            UpdateProgress(0f);
         }
 
-        int percent = Mathf.RoundToInt(Mathf.Clamp01(progress01) * 100f);
-        _progressText.text = $"Rendering Replay: {percent}%";
-    }
-
-    public void Hide()
-    {
-        if (_canvas != null)
+        public void UpdateProgress(float progress01)
         {
-            UnityEngine.Object.Destroy(_canvas.gameObject);
+            if (_progressText != null)
+                _progressText.text = $"Rendering Replay: {Mathf.RoundToInt(Mathf.Clamp01(progress01) * 100f)}%";
+        }
+
+        public void Hide()
+        {
+            if (_canvas == null)
+                return;
+            Object.Destroy(_canvas.gameObject);
             _canvas = null;
             _progressText = null;
         }

@@ -1,4 +1,4 @@
-﻿using HMUI;
+using HMUI;
 using IPA.Utilities;
 using RenderMod.Render;
 using Zenject;
@@ -7,9 +7,7 @@ namespace RenderMod.UI
 {
     internal class RenderSettingsFlow : FlowCoordinator
     {
-        [Inject] private readonly RenderSettingsView _renderSettingsView;
-
-        private FlowCoordinator _lastFlowCoordinator;
+        [Inject] private readonly RenderSettingsView _renderSettingsView = null;
 
         protected override void DidActivate(bool firstActivation, bool addedToHierarchy, bool screenSystemEnabling)
         {
@@ -19,19 +17,13 @@ namespace RenderMod.UI
                 showBackButton = true;
                 ProvideInitialViewControllers(_renderSettingsView);
             }
-            _lastFlowCoordinator = this.GetField<FlowCoordinator, FlowCoordinator>("_parentFlowCoordinator");
-        }
-
-        protected override void DidDeactivate(bool removedFromHierarchy, bool screenSystemDisabling)
-        {
-            base.DidDeactivate(removedFromHierarchy, screenSystemDisabling);
         }
 
         protected override void BackButtonWasPressed(ViewController topViewController)
         {
-            base.BackButtonWasPressed(topViewController);
-            _lastFlowCoordinator.DismissFlowCoordinator(this, ViewController.AnimationDirection.Horizontal);
             ReplayRenderSettings.SaveSettings();
+            this.GetField<FlowCoordinator, FlowCoordinator>("_parentFlowCoordinator")
+                .DismissFlowCoordinator(this, ViewController.AnimationDirection.Horizontal);
         }
     }
 }

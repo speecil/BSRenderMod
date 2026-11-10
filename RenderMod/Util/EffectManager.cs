@@ -1,4 +1,5 @@
-﻿using RenderMod.Render;
+using CameraUtils.Core;
+using RenderMod.Render;
 using SiraUtil.Logging;
 using System;
 using Zenject;
@@ -7,37 +8,20 @@ namespace RenderMod.Util
 {
     internal class EffectManager : IInitializable, IDisposable
     {
-        [Inject] private SiraLog _log;
+        [Inject] private readonly SiraLog _log = null;
 
-        private RenderCameraEffect _renderCameraEffect = null;
-
-        public RenderCameraEffect RenderCameraEffect
-        {
-            get
-            {
-                _log.Info("Getting RenderCameraEffect");
-                return _renderCameraEffect;
-            }
-        }
-
-        public void RefreshCameraEffect()
-        {
-            CameraUtils.Core.CamerasManager.UnRegisterCameraEffect(_renderCameraEffect);
-            CameraUtils.Core.CamerasManager.RegisterCameraEffect(_renderCameraEffect);
-        }
+        public RenderCameraEffect RenderCameraEffect { get; private set; }
 
         public void Initialize()
         {
-            _log.Info("Initializing EffectManager");
-            _renderCameraEffect = new RenderCameraEffect(_log);
-            CameraUtils.Core.CamerasManager.RegisterCameraEffect(_renderCameraEffect);
+            RenderCameraEffect = new RenderCameraEffect(_log);
+            CamerasManager.RegisterCameraEffect(RenderCameraEffect);
         }
 
         public void Dispose()
         {
-            _log.Info("Disposing EffectManager");
-            _renderCameraEffect = null;
-            CameraUtils.Core.CamerasManager.UnRegisterCameraEffect(_renderCameraEffect);
+            CamerasManager.UnRegisterCameraEffect(RenderCameraEffect);
+            RenderCameraEffect = null;
         }
     }
 }

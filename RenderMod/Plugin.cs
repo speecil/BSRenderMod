@@ -1,9 +1,10 @@
-﻿using HarmonyLib;
+using HarmonyLib;
 using IPA;
 using IPA.Utilities;
-using RenderMod.AffinityPatches;
+using RenderMod.Patches;
 using RenderMod.Render;
 using SiraUtil.Zenject;
+using System;
 using System.IO;
 using System.Linq;
 using IPALogger = IPA.Logging.Logger;
@@ -16,39 +17,33 @@ namespace RenderMod
         [Init]
         public Plugin(IPALogger logger, Zenjector zenjector)
         {
-            if (!System.Environment.GetCommandLineArgs().Contains("fpfc"))
-            {
-                return; // this mod is only usable in fpfc (do you really want to kill your gpu that badly?)
-            }
+            if (!Environment.GetCommandLineArgs().Contains("fpfc"))
+                return;
+
             if (!File.Exists(Path.Combine(UnityGame.LibraryPath, "ffmpeg.exe")))
             {
                 logger.Error("ffmpeg.exe not found in the game directory! Exiting!");
                 return;
             }
-            var _harmony = new Harmony("com.speecil.beatsaber.rendermod");
-            if (!ScoreSaberWarningPatch.ShouldPatch(_harmony))
-            {
-                logger.Warn("ScoreSaber not found, skipping ScoreSaber replay warning patch.");
-            }
-            if (!BeatLeaderWarningPatch.ShouldPatch(_harmony))
-            {
-                logger.Warn("BeatLeader not found, skipping BeatLeader replay warning patch.");
-            }
-            if (!LocalLeaderboardWarningPatch.ShouldPatch(_harmony))
-            {
-                logger.Warn("LocalLeaderboard not found, skipping LocalLeaderboard replay warning patch.");
-            }
-            if (!AutoPauseStealthPatch.ShouldPatch(_harmony))
-            {
-                logger.Warn("AutoPauseStealth not found, skipping AutoPauseStealth patch.");
-            }
-            RenderManager._log = logger;
+
+            var harmony = new Harmony("com.speecil.beatsaber.rendermod");
+            ReplayButtonPatches.Apply(harmony, logger);
+            AutoPauseStealthPatch.Apply(harmony, logger);
+
+            RenderManager.Log = logger;
             zenjector.UseLogger(logger);
             zenjector.Install<Installers.AppInstaller>(Location.App);
             zenjector.Install<Installers.MenuInstaller>(Location.Menu);
             zenjector.Install<Installers.RenderInstaller>(Location.GameCore);
 
-            UnityEngine.SceneManagement.SceneManager.activeSceneChanged += RenderManager.SceneChange;
+            try
+            {
+                UnityAudioSyncHook.Install(logger);
+            }
+            catch (Exception ex)
+            {
+                logger.Error($"Failed to install the audio sync hook, rendered audios gonna be cooked mate: {ex}");
+            }
         }
 
         [OnExit]

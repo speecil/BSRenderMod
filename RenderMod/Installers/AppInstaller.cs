@@ -1,4 +1,4 @@
-﻿using RenderMod.Util;
+using RenderMod.Util;
 using Zenject;
 
 namespace RenderMod.Installers

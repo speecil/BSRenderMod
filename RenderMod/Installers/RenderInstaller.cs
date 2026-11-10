@@ -1,4 +1,4 @@
-﻿using RenderMod.Render;
+using RenderMod.Render;
 using SiraUtil.Tools.FPFC;
 using Zenject;
 
@@ -8,17 +8,11 @@ namespace RenderMod.Installers
     {
         public override void InstallBindings()
         {
-            if (!Container.HasBinding<IFPFCSettings>())
-            {
+            if (!Container.HasBinding<IFPFCSettings>() || !ReplayRenderSettings.RenderEnabled)
                 return;
-            }
-            if (!ReplayRenderSettings.RenderEnabled)
-            {
-                return;
-            }
-            Container.BindInterfacesAndSelfTo<ReplayVideoRenderer>().AsSingle().NonLazy();
-            Container.BindInterfacesAndSelfTo<ReplayAudioRenderer>().AsSingle().NonLazy();
-            Container.BindInterfacesAndSelfTo<ReplayProgressUI>().AsSingle().NonLazy();
+
+            Container.BindInterfacesAndSelfTo<ReplayRenderer>().AsSingle().NonLazy();
+            Container.Bind<ReplayProgressUI>().AsSingle();
         }
     }
 }

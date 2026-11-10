@@ -1,4 +1,4 @@
-﻿using BeatSaberMarkupLanguage;
+using BeatSaberMarkupLanguage;
 using SiraUtil.Logging;
 using System.Collections;
 using System.IO;
@@ -9,46 +9,34 @@ using Zenject;
 
 namespace RenderMod.Util
 {
-    // USAGE: DingPlayer.shouldPlayDing = true; it one shots the audio type shit
     internal class DingPlayer : MonoBehaviour
     {
-        public static bool shouldPlayDing = false;
+        public static volatile bool shouldPlayDing;
 
-        [Inject] private readonly SiraLog _log;
+        [Inject] private readonly SiraLog _log = null;
+
+        private void Update()
+        {
+            if (shouldPlayDing)
+            {
+                shouldPlayDing = false;
+                StartCoroutine(Ding());
+            }
+        }
 
         private IEnumerator Ding()
         {
-            shouldPlayDing = false;
-            float previousVolume = AudioListener.volume;
-            AudioListener.volume = 0.75f;
+            string path = Path.Combine(Application.temporaryCachePath, "ding.ogg");
+            File.WriteAllBytes(path, Utilities.GetResource(Assembly.GetExecutingAssembly(), "RenderMod.UI.Ding.ogg"));
 
-            byte[] dingData = Utilities.GetResource(Assembly.GetExecutingAssembly(), "RenderMod.UI.Ding.ogg");
-
-            string tempPath = Path.Combine(Application.temporaryCachePath, "ding.ogg");
-            File.WriteAllBytes(tempPath, dingData);
-
-            using (UnityWebRequest www = UnityWebRequestMultimedia.GetAudioClip("file://" + tempPath, AudioType.OGGVORBIS))
+            using (var www = UnityWebRequestMultimedia.GetAudioClip("file://" + path, AudioType.OGGVORBIS))
             {
                 yield return www.SendWebRequest();
 
                 if (www.result == UnityWebRequest.Result.Success)
-                {
-                    AudioClip clip = DownloadHandlerAudioClip.GetContent(www);
-                    AudioSource.PlayClipAtPoint(clip, Vector3.zero);
-                }
+                    AudioSource.PlayClipAtPoint(DownloadHandlerAudioClip.GetContent(www), Vector3.zero);
                 else
-                {
                     _log.Error("Failed to load ding: " + www.error);
-                }
-            }
-            AudioListener.volume = previousVolume;
-        }
-
-        void Update()
-        {
-            if (shouldPlayDing)
-            {
-                StartCoroutine(Ding());
             }
         }
     }

@@ -1,4 +1,4 @@
-﻿using RenderMod.UI;
+using RenderMod.UI;
 using RenderMod.Util;
 using SiraUtil.Tools.FPFC;
 using Zenject;

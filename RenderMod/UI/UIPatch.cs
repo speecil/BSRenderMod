@@ -1,8 +1,7 @@
-﻿using BeatSaberMarkupLanguage.Attributes;
+using BeatSaberMarkupLanguage.Attributes;
 using BeatSaberMarkupLanguage.GameplaySetup;
 using IPA.Utilities;
 using RenderMod.Render;
-using RenderMod.UI;
 using SiraUtil.Affinity;
 using System;
 using System.Linq;
@@ -10,14 +9,14 @@ using UnityEngine;
 using UnityEngine.UI;
 using Zenject;
 
-namespace RenderMod
+namespace RenderMod.UI
 {
     internal class UIPatch : IInitializable, IDisposable, IAffinity
     {
-        [Inject] private GameplaySetup gameplaySetup;
-        [Inject] private readonly RenderSettingsFlow renderSettingsVFlow;
+        [Inject] private readonly GameplaySetup _gameplaySetup = null;
+        [Inject] private readonly RenderSettingsFlow _renderSettingsFlow = null;
 
-        private Button _actionButton;
+        private Button _playButton;
 
         [UIValue("renderEnabled")] private bool renderEnabled = ReplayRenderSettings.RenderEnabled;
 
@@ -25,36 +24,33 @@ namespace RenderMod
         private void OnToggleChanged(bool value)
         {
             ReplayRenderSettings.RenderEnabled = value;
-            if (_actionButton != null)
-            {
-                _actionButton.interactable = !value;
-            }
+            if (_playButton != null)
+                _playButton.interactable = !value;
         }
 
         [UIAction("OpenSettings")]
         private void OpenSettings()
         {
-            Resources.FindObjectsOfTypeAll<SoloFreePlayFlowCoordinator>().FirstOrDefault().PresentFlowCoordinator(renderSettingsVFlow);
+            Resources.FindObjectsOfTypeAll<SoloFreePlayFlowCoordinator>().FirstOrDefault()?.PresentFlowCoordinator(_renderSettingsFlow);
         }
 
         public void Initialize()
         {
-            gameplaySetup.AddTab("Render Mod", "RenderMod.UI.RenderModView.bsml", this, MenuType.Solo);
+            _gameplaySetup.AddTab("Render Mod", "RenderMod.UI.RenderModView.bsml", this, MenuType.Solo);
         }
 
         public void Dispose()
         {
-            gameplaySetup?.RemoveTab("Render Mod");
+            _gameplaySetup?.RemoveTab("Render Mod");
         }
 
         [AffinityPatch(typeof(StandardLevelDetailView), "RefreshContent")]
         [AffinityPostfix]
-        public void daPatch(StandardLevelDetailView __instance)
+        private void RefreshContentPostfix(StandardLevelDetailView __instance)
         {
-            var button = __instance.GetField<Button, StandardLevelDetailView>("_actionButton");
-            _actionButton = button;
-            if (_actionButton == null) return;
-            _actionButton.interactable = !ReplayRenderSettings.RenderEnabled;
+            _playButton = __instance.GetField<Button, StandardLevelDetailView>("_actionButton");
+            if (_playButton != null)
+                _playButton.interactable = !ReplayRenderSettings.RenderEnabled;
         }
     }
 }

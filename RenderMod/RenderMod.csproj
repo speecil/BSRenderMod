@@ -5,6 +5,7 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProductVersion>8.0.30703</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
+    <LangVersion>9.0</LangVersion>
     <ProjectGuid>{84F02CAC-BEB2-46A5-A1B5-6EFE906BF1DB}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
@@ -265,24 +266,23 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AffinityPatches\AutoPauseStealthPatch.cs" />
-    <Compile Include="AffinityPatches\BeatLeaderWarningPatch.cs" />
-    <Compile Include="AffinityPatches\ScoreSaberWarningPatch.cs" />
-    <Compile Include="AffinityPatches\LocalLeaderboardWarningPatch.cs" />
     <Compile Include="Installers\AppInstaller.cs" />
     <Compile Include="Installers\MenuInstaller.cs" />
     <Compile Include="Installers\RenderInstaller.cs" />
+    <Compile Include="NativePatches\UnityAudioSyncHook.cs" />
+    <Compile Include="Patches\AutoPauseStealthPatch.cs" />
+    <Compile Include="Patches\ReplayButtonPatches.cs" />
     <Compile Include="Plugin.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Render\AudioCaptureFilter.cs" />
     <Compile Include="Render\EncoderHelpers.cs" />
     <Compile Include="Render\FfmpegPipe.cs" />
     <Compile Include="Render\RenderCameraEffect.cs" />
     <Compile Include="Render\RenderManager.cs" />
-    <Compile Include="Render\ReplayAudioRenderer.cs" />
+    <Compile Include="Render\ReplayAudioCapture.cs" />
+    <Compile Include="Render\ReplayCameraCaptureDriver.cs" />
     <Compile Include="Render\ReplayProgressUI.cs" />
     <Compile Include="Render\ReplayRenderSettings.cs" />
-    <Compile Include="Render\ReplayVideoRenderer.cs" />
+    <Compile Include="Render\ReplayRenderer.cs" />
     <Compile Include="UI\MenuButtonView.cs" />
     <Compile Include="UI\RenderSettingsFlow.cs" />
     <Compile Include="UI\RenderSettingsView.cs" />

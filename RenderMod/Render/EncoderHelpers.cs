@@ -1,228 +1,120 @@
 using System;
-using IPA.Utilities;
-using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using Debug = UnityEngine.Debug;
 
 namespace RenderMod.Render
 {
     public static class EncoderHelpers
     {
-        private static readonly string FFmpegPath =
-            Path.Combine(UnityGame.LibraryPath, "ffmpeg.exe");
+        // these messages should hopefully be enough to help users
+        // ffmpeg should be the latest release build
+        private static readonly (string error, string hint)[] FailureHints =
+        {
+            ("required nvenc API version", "the NVIDIA driver is too old for this FFmpeg build. Update the driver or use an older FFmpeg"),
+            ("minimum required Nvidia driver", "the NVIDIA driver is too old for this FFmpeg build. Update the driver or use an older FFmpeg"),
+            ("Cannot get the preset configuration", "the FFmpeg build in Beat Saber/Libs is too old for this NVIDIA driver. Replace Libs/ffmpeg.exe with a newer build"),
+            ("Cannot load nvcuda.dll", "the NVIDIA driver could not be loaded"),
+            ("No NVENC capable devices found", "no NVENC capable NVIDIA GPU was found"),
+            ("OpenEncodeSessionEx failed", "an NVENC session could not be opened. Update the driver or close other recording software"),
+            ("amfrt64.dll", "the AMD encoder runtime is not installed or no supported AMD GPU was found"),
+            ("Failed to create", "an AMD encoder device could not be created"),
+            ("MFX session", "Intel Quick Sync is not supported or is disabled"),
+            ("mfx implementation", "Intel Quick Sync is not supported or is disabled"),
+        };
 
         public static string SelectBestEncoder()
         {
-            string encodersOutput = GetEncodersOutput();
+            string codec = ReplayRenderSettings.VideoCodec ?? "h264";
+            string software = codec == "hevc" ? "libx265" : codec == "av1" ? "libaom-av1" : "libx264";
 
-            if (ReplayRenderSettings.VideoCodec == "hevc")
+            FFmpegPipe.Run("-hide_banner -encoders", out string encoders);
+            if (string.IsNullOrWhiteSpace(encoders))
             {
-                if (IsEncoderUsable("hevc_nvenc", encodersOutput))
-                    return "hevc_nvenc";
-
-                if (IsEncoderUsable("hevc_amf", encodersOutput))
-                    return "hevc_amf";
-
-                if (IsEncoderUsable("hevc_qsv", encodersOutput))
-                    return "hevc_qsv";
-                
-                return "libx265";
+                Debug.LogWarning("FFmpeg -encoders returned no output. Falling back to software encoding.");
+                return software;
             }
-            
-            if (ReplayRenderSettings.VideoCodec == "av1")
+
+            foreach (string hw in new[] { "nvenc", "amf", "qsv" })
             {
-                if (IsEncoderUsable("av1_nvenc", encodersOutput))
-                    return "av1_nvenc";
-
-                if (IsEncoderUsable("av1_amf", encodersOutput))
-                    return "av1_amf";
-
-                if (IsEncoderUsable("av1_qsv", encodersOutput))
-                    return "av1_qsv";
-                
-                return "libaom-av1";
+                string encoder = $"{codec}_{hw}";
+                if (IsListed(encoder, encoders) && TestEncoder(encoder))
+                {
+                    Debug.Log("Selected usable encoder: " + encoder);
+                    return encoder;
+                }
             }
-            if (IsEncoderUsable("h264_nvenc", encodersOutput))
-                return "h264_nvenc";
 
-            if (IsEncoderUsable("h264_amf", encodersOutput))
-                return "h264_amf";
-
-            if (IsEncoderUsable("h264_qsv", encodersOutput))
-                return "h264_qsv";
-            
-            return "libx264";
+            Debug.LogWarning($"No usable hardware {codec} encoder found. Falling back to {software}.");
+            return software;
         }
 
-        private static string GetEncodersOutput()
+        private static bool IsListed(string encoder, string encoders)
         {
-            try
+            using (var reader = new StringReader(encoders))
             {
-                var proc = new Process();
-                proc.StartInfo.FileName = FFmpegPath;
-                proc.StartInfo.Arguments = "-hide_banner -encoders";
-                proc.StartInfo.RedirectStandardOutput = true;
-                proc.StartInfo.UseShellExecute = false;
-                proc.StartInfo.CreateNoWindow = true;
-
-                proc.Start();
-                string output = proc.StandardOutput.ReadToEnd();
-                proc.WaitForExit();
-
-                proc.Close();
-                proc.Dispose();
-
-                return output;
+                string line;
+                while ((line = reader.ReadLine()) != null)
+                {
+                    var parts = line.Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+                    if (parts.Length >= 2 && parts[1] == encoder)
+                        return true;
+                }
             }
-            catch
-            {
-                return string.Empty;
-            }
-        }
-        
-        private static bool IsEncoderUsable(string encoder, string encodersOutput)
-        {
-            if (!encodersOutput.Contains(encoder))
-            {
-                Debug.LogError($"{encoder} is unavailable!");
-                return false;
-            }
-            return TestEncoder(encoder);
+            return false;
         }
 
         public static bool TestEncoder(string encoder)
         {
-            try
-            {
-                var proc = new Process();
-                proc.StartInfo.FileName = FFmpegPath;
-                proc.StartInfo.Arguments =
-                    $"-hide_banner -loglevel error " +
-                    $"-f lavfi -i testsrc=size=1280x720:rate=30 " +
-                    $"-vf format=yuv420p -c:v {encoder} -t 1 -f null -";
+            bool hardware = encoder.Contains("nvenc") || encoder.Contains("amf") || encoder.Contains("qsv");
+            string args =
+                "-hide_banner -loglevel error -f lavfi -i testsrc=size=1280x720:rate=30 -frames:v 1 " +
+                $"-vf format={(hardware ? "nv12" : "yuv420p")} -c:v {encoder} " +
+                (encoder.Contains("nvenc") ? "-preset medium " : "") +
+                "-f null -";
 
-                proc.StartInfo.RedirectStandardError = true;
-                proc.StartInfo.UseShellExecute = false;
-                proc.StartInfo.CreateNoWindow = true;
+            if (FFmpegPipe.Run(args, out string error))
+                return true;
 
-                proc.Start();
-                proc.WaitForExit();
-
-                int exitCode = proc.ExitCode;
-                proc.Close();
-                proc.Dispose();
-
-                return exitCode == 0;
-            }
-            catch (Exception ex)
-            {
-                Debug.LogError(ex);
-                return false;
-            }
+            string hint = FailureHints.FirstOrDefault(h => error.IndexOf(h.error, StringComparison.OrdinalIgnoreCase) >= 0).hint;
+            Debug.LogWarning($"{encoder} is unavailable{(hint != null ? ": " + hint : "")}.\nFFmpeg error:\n{error}");
+            return false;
         }
 
         public static (string encoder, string args) BuildEncoderArgs()
         {
-            var encoder = SelectBestEncoder();
-            return BuildEncoderArgs(encoder);
+            return BuildEncoderArgs(SelectBestEncoder());
         }
 
         public static (string encoder, string args) BuildEncoderArgs(string encoder)
         {
-            string presetArgs = "";
-            string bitrateArg = $"-b:v {ReplayRenderSettings.BitrateKbps}k";
+            string bitrate = $"-b:v {ReplayRenderSettings.BitrateKbps}k";
+            var p = Presets[(int)ReplayRenderSettings.Preset];
 
-            switch (ReplayRenderSettings.Preset)
-            {
-                case QualityPreset.Low:
-                    if (encoder.Contains("av1_nvenc"))
-                    {
-                        presetArgs = $"-preset fast -rc vbr {bitrateArg}";
-                    }
-                    else if (encoder.Contains("nvenc"))
-                    {
-                        presetArgs = $"-preset fast -rc vbr_hq -cq 28 {bitrateArg}";
-                    }
-                    else if (encoder.Contains("amf"))
-                    {
-                        presetArgs = $"-quality speed -q 28 {bitrateArg}";
-                    }
-                    else if (encoder.Contains("qsv"))
-                    {
-                        presetArgs = $"-preset veryfast -global_quality 30 {bitrateArg}";
-                    }
-                    else if (encoder.Contains("aom"))
-                    {
-                        presetArgs = $"-cpu-used 6 -crf 28 {bitrateArg}";
-                    }
-                    else
-                    {
-                        presetArgs = $"-preset ultrafast -crf 28 {bitrateArg}";
-                    }
-                    break;
+            string presetArgs;
+            if (encoder.Contains("av1_nvenc"))
+                presetArgs = $"-preset {p.nvenc} -rc vbr {(ReplayRenderSettings.Preset == QualityPreset.High ? "-tune hq " : "")}{bitrate}";
+            else if (encoder.Contains("nvenc"))
+                presetArgs = $"-preset {p.nvenc} -rc vbr -cq {p.crf} {bitrate}";
+            else if (encoder.Contains("amf"))
+                presetArgs = $"-quality {p.amf} -q {p.crf} {bitrate}";
+            else if (encoder.Contains("qsv"))
+                presetArgs = $"-preset {p.qsv} -global_quality {p.qsvQuality} {bitrate}";
+            else if (encoder.Contains("aom"))
+                presetArgs = $"-cpu-used 6 -crf {p.crf} {bitrate}";
+            else
+                presetArgs = $"-preset {p.software} -crf {p.crf} {bitrate}";
 
-                case QualityPreset.Medium:
-                    if (encoder.Contains("av1_nvenc"))
-                    {
-                        presetArgs = $"-preset medium -rc vbr {bitrateArg}";
-                    }
-                    else if (encoder.Contains("nvenc"))
-                    {
-                        presetArgs = $"-preset medium -rc vbr_hq -cq 23 {bitrateArg}";
-                    }
-                    else if (encoder.Contains("amf"))
-                    {
-                        presetArgs = $"-quality balanced -q 23 {bitrateArg}";
-                    }
-                    else if (encoder.Contains("qsv"))
-                    {
-                        presetArgs = $"-preset medium -global_quality 25 {bitrateArg}";
-                    }
-                    else if (encoder.Contains("aom"))
-                    {
-                        presetArgs = $"-cpu-used 6 -crf 23 {bitrateArg}";
-                    }
-                    else
-                    {
-                        presetArgs = $"-preset medium -crf 23 {bitrateArg}";
-                    }
-                    break;
-
-                case QualityPreset.High:
-                    if (encoder.Contains("av1_nvenc"))
-                    {
-                        presetArgs = $"-preset slow -rc vbr -tune hq {bitrateArg}";
-                    }
-                    else if (encoder.Contains("nvenc"))
-                    {
-                        presetArgs = $"-preset slow -rc vbr_hq -cq 18 {bitrateArg}";
-                    }
-                    else if (encoder.Contains("amf"))
-                    {
-                        presetArgs = $"-quality quality -q 18 {bitrateArg}";
-                    }
-                    else if (encoder.Contains("qsv"))
-                    {
-                        presetArgs = $"-preset slow -global_quality 20 {bitrateArg}";
-                    }
-                    else if (encoder.Contains("aom"))
-                    {
-                        presetArgs = $"-cpu-used 6 -crf 18 {bitrateArg}";
-                    }
-                    else
-                    {
-                        presetArgs = $"-preset slow -crf 18 {bitrateArg}";
-                    }
-                    break;
-            }
-
-            string args =
-                $"-c:v {encoder} " +
-                $"{presetArgs} " +
-                $"-pix_fmt {ReplayRenderSettings.PixelFormat} " +
-                $"{ReplayRenderSettings.ExtraFFmpegArgs}";
-
+            string args = $"-c:v {encoder} {presetArgs} -pix_fmt {ReplayRenderSettings.PixelFormat} {ReplayRenderSettings.ExtraFFmpegArgs}";
             return (encoder, args);
         }
+
+        // i love c#!
+        private static readonly (string nvenc, int crf, string amf, string qsv, int qsvQuality, string software)[] Presets =
+        {
+            ("fast", 28, "speed", "veryfast", 30, "ultrafast"),
+            ("medium", 23, "balanced", "medium", 25, "medium"),
+            ("slow", 18, "quality", "slow", 20, "slow"),
+        };
     }
 }

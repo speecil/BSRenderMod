@@ -1,165 +1,155 @@
 using IPA.Utilities;
-using RenderMod.Render;
 using System;
 using System.Diagnostics;
 using System.IO;
 using Debug = UnityEngine.Debug;
 
-public class FFmpegPipe
+namespace RenderMod.Render
 {
-    private Process ffmpeg;
-    private Stream ffmpegInput;
-    private bool isClosed = false;
-
-    public FFmpegPipe(string args)
+    internal class FFmpegPipe
     {
-        ffmpeg = new Process();
-        ffmpeg.StartInfo.FileName = Path.Combine(UnityGame.LibraryPath, "ffmpeg.exe");
-        ffmpeg.StartInfo.Arguments = args;
-        ffmpeg.StartInfo.UseShellExecute = false;
-        ffmpeg.StartInfo.RedirectStandardInput = true;
-        ffmpeg.StartInfo.RedirectStandardError = true;
-        ffmpeg.StartInfo.RedirectStandardOutput = true;
-        ffmpeg.StartInfo.CreateNoWindow = true;
+        public static readonly string FFmpegPath = Path.Combine(UnityGame.LibraryPath, "ffmpeg.exe");
 
-        try
-        {
-            ffmpeg.Start();
-            ffmpeg.BeginErrorReadLine();
-            ffmpeg.BeginOutputReadLine();
-            ffmpegInput = ffmpeg.StandardInput.BaseStream;
-        }
-        catch (Exception ex)
-        {
-            Debug.LogError($"Failed to start FFmpeg: {ex}");
-        }
-    }
+        public static string RawFormat => ReplayRenderSettings.VideoCodec == "av1" ? "ivf" : ReplayRenderSettings.VideoCodec;
 
-    public void WriteFrame(byte[] frame)
-    {
-        if (isClosed) return;
+        private Process _ffmpeg;
+        private Stream _input;
+        private bool _closed;
 
-        try
+        public FFmpegPipe(string args)
         {
-            ffmpegInput?.Write(frame, 0, frame.Length);
-        }
-        catch (ObjectDisposedException)
-        {
-            // kill me now
-        }
-        catch (Exception ex)
-        {
-            Debug.LogError($"FFmpeg WriteFrame failed: {ex.Message}");
-            Close();
-        }
-    }
+            _ffmpeg = new Process { StartInfo = CreateStartInfo(args) };
+            _ffmpeg.StartInfo.RedirectStandardInput = true;
 
-
-    public void Close()
-    {
-        if (isClosed) return;
-        isClosed = true;
-
-        try
-        {
-            if (ffmpegInput != null)
+            try
             {
-                ffmpegInput.Flush();
-                ffmpegInput.Close();
-                ffmpegInput.Dispose();
-                ffmpegInput = null;
+                _ffmpeg.Start();
+                _ffmpeg.BeginErrorReadLine(); // stop it from blocking
+                _input = _ffmpeg.StandardInput.BaseStream;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"Failed to start FFmpeg: {ex}");
             }
         }
-        catch (Exception ex)
-        {
-            Debug.LogWarning($"Error closing FFmpeg input: {ex.Message}");
-        }
 
-        try
+        public void WriteFrame(byte[] frame)
         {
-            if (ffmpeg != null && !ffmpeg.HasExited)
+            if (_closed) return;
+
+            try
             {
-                ffmpeg.WaitForExit();
+                _input?.Write(frame, 0, frame.Length);
+            }
+            catch (ObjectDisposedException)
+            {
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"FFmpeg WriteFrame failed: {ex.Message}");
+                Close();
             }
         }
-        catch (Exception ex)
+
+        public void Close()
         {
-            Debug.LogWarning($"Error waiting for FFmpeg to exit: {ex.Message}");
+            if (_closed) return;
+            _closed = true;
+
+            try
+            {
+                _input?.Close();
+                _input = null;
+                if (_ffmpeg != null && !_ffmpeg.HasExited)
+                    _ffmpeg.WaitForExit();
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"Error closing FFmpeg: {ex.Message}");
+            }
+
+            _ffmpeg?.Dispose();
+            _ffmpeg = null;
         }
 
-        if (ffmpeg != null)
+        public static bool RemuxRawStreamToMp4(string rawStreamPath, string outputMp4Path, int fps)
         {
-            ffmpeg.Dispose();
-            ffmpeg = null;
-        }
-    }
+            if (!File.Exists(rawStreamPath))
+            {
+                Debug.LogError($"Raw video file not found: {rawStreamPath}");
+                return false;
+            }
 
-
-    public static void RemuxRawStreamToMp4(string rawStreamPath, string outputMp4Path, int fps)
-    {
-        if (!File.Exists(rawStreamPath))
-        {
-            Debug.LogError($"Raw video file not found: {rawStreamPath}");
-            return;
+            return Run($"-y -r {fps} -f {RawFormat} -i \"{rawStreamPath}\" -c:v copy \"{outputMp4Path}\"", "video remux")
+                && File.Exists(outputMp4Path);
         }
 
-        var ffm = new Process();
-        ffm.StartInfo.FileName = Path.Combine(UnityGame.LibraryPath, "ffmpeg.exe");
-
-        string codec = ReplayRenderSettings.VideoCodec;
-        if (codec == "av1")
+        public static bool AddAudioToMp4(string videoMp4Path, string audioPath, string finalMp4Path, int audioBitrateKbps)
         {
-            codec = "ivf";
-        }
-        ffm.StartInfo.Arguments =
-            $"-y -r {fps} -f {codec} -i \"{rawStreamPath}\" " +
-            $"-c:v copy \"{outputMp4Path}\"";
+            if (!File.Exists(audioPath))
+            {
+                Debug.LogError($"Audio WAV not found: {audioPath}");
+                return false;
+            }
 
-        ffm.StartInfo.UseShellExecute = false;
-        ffm.StartInfo.CreateNoWindow = true;
-        ffm.StartInfo.RedirectStandardError = true;
+            bool ok = Run(
+                $"-y -i \"{videoMp4Path}\" -i \"{audioPath}\" " +
+                $"-map 0:v:0 -map 1:a:0 -c:v copy -c:a aac -b:a {audioBitrateKbps}k " +
+                $"-shortest -movflags +faststart \"{finalMp4Path}\"",
+                "audio mux");
 
-        ffm.Start();
-        ffm.BeginErrorReadLine();
-        ffm.WaitForExit();
-    }
+            try
+            {
+                File.Delete(videoMp4Path);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"Failed to delete intermediate MP4: {ex}");
+            }
 
-    public static void AddAudioToMp4(string videoMp4Path, string audioPath, string finalMp4Path, int audioBitrateKbps)
-    {
-        if (!File.Exists(videoMp4Path))
-        {
-            Debug.LogError($"Video MP4 not found: {videoMp4Path}");
-            return;
+            return ok && File.Exists(finalMp4Path);
         }
 
-        if (!File.Exists(audioPath))
+        // runs ffmpeg to completion, log stderr if it fails
+        public static bool Run(string args, string what)
         {
-            Debug.LogError($"Audio WAV not found: {audioPath}");
-            return;
+            return Run(args, out string error) || Fail(what, error);
         }
 
-        var ffm = new Process();
-        ffm.StartInfo.FileName = Path.Combine(UnityGame.LibraryPath, "ffmpeg.exe");
-
-        ffm.StartInfo.Arguments =
-            $"-y -i \"{videoMp4Path}\" -i \"{audioPath}\" " +
-            $"-c:v copy -c:a aac -b:a {audioBitrateKbps}k -shortest \"{finalMp4Path}\"";
-
-        ffm.StartInfo.UseShellExecute = false;
-        ffm.StartInfo.CreateNoWindow = true;
-        ffm.StartInfo.RedirectStandardError = true;
-
-        ffm.Start();
-        ffm.BeginErrorReadLine();
-        ffm.WaitForExit();
-
-        try
+        public static bool Run(string args, out string output)
         {
-            File.Delete(videoMp4Path);
+            try
+            {
+                using (var proc = new Process { StartInfo = CreateStartInfo(args) })
+                {
+                    proc.StartInfo.RedirectStandardOutput = true;
+                    proc.Start();
+                    // stop blocking
+                    var stdout = proc.StandardOutput.ReadToEndAsync();
+                    string stderr = proc.StandardError.ReadToEnd();
+                    proc.WaitForExit();
+                    output = stdout.Result + stderr;
+                    return proc.ExitCode == 0;
+                }
+            }
+            catch (Exception ex)
+            {
+                output = ex.ToString();
+                return false;
+            }
         }
-        catch (Exception ex)
+
+        private static bool Fail(string what, string error)
         {
-            Debug.LogWarning($"Failed to delete intermediate MP4: {ex}");
+            Debug.LogError($"FFmpeg {what} failed: {error}");
+            return false;
         }
+
+        private static ProcessStartInfo CreateStartInfo(string args) => new ProcessStartInfo(FFmpegPath, args)
+        {
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            RedirectStandardError = true
+        };
     }
 }

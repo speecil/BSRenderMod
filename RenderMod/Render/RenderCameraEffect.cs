@@ -1,4 +1,4 @@
-﻿using CameraUtils.Core;
+using CameraUtils.Core;
 using RenderMod.Util;
 using SiraUtil.Logging;
 using System.Linq;
@@ -8,12 +8,11 @@ namespace RenderMod.Render
 {
     internal class RenderCameraEffect : ICameraEffect
     {
-        private SiraLog _siraLog;
-        public RenderCameraEffect(SiraLog siraLog)
+        private readonly SiraLog _log;
+
+        public RenderCameraEffect(SiraLog log)
         {
-            FoundCamera = null;
-            _siraLog = siraLog;
-            _siraLog.Notice("RenderCameraEffect created");
+            _log = log;
         }
 
         public Camera FoundCamera { get; private set; }
@@ -21,25 +20,23 @@ namespace RenderMod.Render
         public void HandleAddedToCamera(RegisteredCamera registeredCamera)
         {
             FoundCamera = registeredCamera.Camera;
-            _siraLog.Info($"Render camera found: {FoundCamera.transform.GetPath()}");
+            _log.Info($"Render camera found: {FoundCamera.transform.GetPath()}");
         }
 
         public void HandleRemovedFromCamera(RegisteredCamera registeredCamera)
         {
             FoundCamera = null;
-            _siraLog.Info($"Render camera removed: {registeredCamera.Camera.transform.GetPath()}");
+            _log.Info($"Render camera removed: {registeredCamera.Camera.transform.GetPath()}");
         }
 
         public bool IsSuitableForCamera(RegisteredCamera registeredCamera)
         {
-            if (registeredCamera.CameraFlags == CameraFlags.Mirror) return false;
+            // "None" renders from Camera.main
+            if (registeredCamera.CameraFlags == CameraFlags.Mirror || ReplayRenderSettings.CameraType == "None")
+                return false;
 
             if (ReplayRenderSettings.CameraType == "ReeCamera")
-            {
-                var components = registeredCamera.Camera.GetComponents<Component>();
-                bool isSuitable = components.Any(c => c.GetType().FullName == "ReeCamera.MainCameraController");
-                return isSuitable;
-            }
+                return registeredCamera.Camera.GetComponents<Component>().Any(c => c.GetType().FullName == "ReeCamera.MainCameraController");
 
             return registeredCamera.Camera.transform.GetObjectPath(int.MaxValue).Contains(ReplayRenderSettings.SpecifiedCameraName);
         }
