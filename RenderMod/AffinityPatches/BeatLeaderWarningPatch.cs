@@ -52,7 +52,7 @@ namespace RenderMod.AffinityPatches
                 () =>
                 {
                     shouldNotInterfere = true;
-                    RenderManager.StartVideoRender(true);
+                    RenderManager.StartVideoRender("BeatLeader");
                 },
                 "Render Mod",
                 $"About to render a BeatLeader Replay\n" +

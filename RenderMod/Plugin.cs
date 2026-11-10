@@ -34,6 +34,10 @@ namespace RenderMod
             {
                 logger.Warn("BeatLeader not found, skipping BeatLeader replay warning patch.");
             }
+            if (!LocalLeaderboardWarningPatch.ShouldPatch(_harmony))
+            {
+                logger.Warn("LocalLeaderboard not found, skipping LocalLeaderboard replay warning patch.");
+            }
             if (!AutoPauseStealthPatch.ShouldPatch(_harmony))
             {
                 logger.Warn("AutoPauseStealth not found, skipping AutoPauseStealth patch.");

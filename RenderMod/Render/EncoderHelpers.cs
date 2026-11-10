@@ -114,8 +114,9 @@ namespace RenderMod.Render
 
                 return exitCode == 0;
             }
-            catch
+            catch (Exception ex)
             {
+                Debug.LogError(ex);
                 return false;
             }
         }

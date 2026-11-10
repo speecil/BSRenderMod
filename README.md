@@ -38,3 +38,8 @@ From there, you can:
 
   *(The mod will not run unless using `-fpfc` or the first person flying controller)*
 - Ensure that the replay files being played are not broken or your replay playback mod is broken, this mod does not handle the replays themselves
+- If you are on Linux with an NVIDIA card and planning to use AV1, you need to manually install NVIDIA Libs to your Wine prefix, instructions can be found here: https://github.com/SveSop/nvidia-libs
+
+  *(If you are using BSManager, your Wine prefix should be here: `/home/username/BSManager/SharedContent/compatdata/pfx/drive_c/windows/system32/`)*
+
+  *(If that still doesn't work, check `syswow64` for `nvcuvid.dll`, `nvencodeapi64.dll` and `nvoptix.dll`, and if you find those there, move those to `system32`)*

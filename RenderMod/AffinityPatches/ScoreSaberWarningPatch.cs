@@ -54,7 +54,7 @@ namespace RenderMod.AffinityPatches
                 () =>
                 {
                     shouldNotInterfere = true;
-                    RenderManager.StartVideoRender(false);
+                    RenderManager.StartVideoRender("ScoreSaber");
                 },
                 "Render Mod",
                 $"About to render a ScoreSaber Replay\n" +
@@ -127,7 +127,7 @@ namespace RenderMod.AffinityPatches
                 }
                 catch
                 {
-                    Debug.LogError("Render Mod: Failed to patch BeatLeader replay button!");
+                    Debug.LogError("Render Mod: Failed to patch ScoreSaber replay button!");
                 }
             }
             return false;

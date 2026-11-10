@@ -22,38 +22,53 @@ namespace RenderMod.Render
 
         public static RenderState currentState = RenderState.None;
 
-        private static bool beatleaderRender = false;
+        private static string whichLeaderboardRender = "";
 
-        public static void StartVideoRender(bool beatleader)
+        public static void StartVideoRender(string leaderboard)
         {
             currentState = RenderState.Video;
-            beatleaderRender = beatleader;
-            if (beatleaderRender)
+            whichLeaderboardRender = leaderboard;
+            switch (whichLeaderboardRender)
             {
-                _log.Notice("Starting video render for BeatLeader replay");
-                BeatLeaderWarningPatch.TargetMethod()?.Invoke(BeatLeaderWarningPatch.instance, null);
-                BeatLeaderWarningPatch.shouldNotInterfere = true;
-            }
-            else
-            {
-                _log.Notice("Starting video render for ScoreSaber replay");
-                ScoreSaberWarningPatch.TargetMethod()?.Invoke(ScoreSaberWarningPatch.instance, null);
-                ScoreSaberWarningPatch.shouldNotInterfere = true;
+                case "BeatLeader":
+                    _log.Notice("Starting video render for BeatLeader replay");
+                    BeatLeaderWarningPatch.TargetMethod()?.Invoke(BeatLeaderWarningPatch.instance, null);
+                    BeatLeaderWarningPatch.shouldNotInterfere = true;
+                    break;
+                case "LocalLeaderboard":
+                    _log.Notice("Starting video render for LocalLeaderboard replay");
+                    LocalLeaderboardWarningPatch.TargetMethod()?.Invoke(LocalLeaderboardWarningPatch.instance, null);
+                    LocalLeaderboardWarningPatch.shouldNotInterfere = true;
+                    break;
+                case "ScoreSaber":
+                    _log.Notice("Starting video render for ScoreSaber replay");
+                    ScoreSaberWarningPatch.TargetMethod()?.Invoke(ScoreSaberWarningPatch.instance, null);
+                    ScoreSaberWarningPatch.shouldNotInterfere = true;
+                    break;
+                default:
+                    break;
             }
         }
 
         public static void StartAudioCapture()
         {
             currentState = RenderState.Audio;
-            if (beatleaderRender)
+            switch (whichLeaderboardRender)
             {
-                _log.Notice("Starting audio render for BeatLeader replay");
-                BeatLeaderWarningPatch.TargetMethod()?.Invoke(BeatLeaderWarningPatch.instance, null);
-            }
-            else
-            {
-                _log.Notice("Starting audio render for ScoreSaber replay");
-                ScoreSaberWarningPatch.TargetMethod()?.Invoke(ScoreSaberWarningPatch.instance, null);
+                case "BeatLeader":
+                    _log.Notice("Starting audio render for BeatLeader replay");
+                    BeatLeaderWarningPatch.TargetMethod()?.Invoke(BeatLeaderWarningPatch.instance, null);
+                    break;
+                case "LocalLeaderboard":
+                    _log.Notice("Starting audio render for LocalLeaderboard replay");
+                    LocalLeaderboardWarningPatch.TargetMethod()?.Invoke(LocalLeaderboardWarningPatch.instance, null);
+                    break;
+                case "ScoreSaber":
+                    _log.Notice("Starting audio render for ScoreSaber replay");
+                    ScoreSaberWarningPatch.TargetMethod()?.Invoke(ScoreSaberWarningPatch.instance, null);
+                    break;
+                default:
+                    break;
             }
         }
 

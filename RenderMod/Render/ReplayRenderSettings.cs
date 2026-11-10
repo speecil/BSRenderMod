@@ -18,7 +18,10 @@ namespace RenderMod.Render
 
         // general
         public static int Width = 1920;
-        public static int Height = 1080; // TODO: add preset support for 4K, 1440p, instead of increment settings
+        public static int Height = 1080;
+        public static string AspectRatio = "16:9";
+        public static bool PortraitToggle = false;
+        
         public static int FPS = 60; // default FPS for rendering, can be changed to 120 or whatever
 
         public static string SpecifiedCameraName = "Main"; // Camera2 default camera name is "Main"
@@ -28,7 +31,7 @@ namespace RenderMod.Render
         public static int BitrateKbps = 10000; // always respected, regardless of preset
 
         // encoding
-        public static string VideoCodec = "h264"; // unused (i doubt people have different encoders available) || AmeRed: let the people choose what they want :)
+        public static string VideoCodec = "h264";
         public static string PixelFormat = "yuv420p";
         public static bool IncludeAudio = true; // unused, always true for now
         public static string AudioCodec = "aac"; // unused, always aac for now
@@ -58,6 +61,8 @@ namespace RenderMod.Render
             CameraType = settings.Value<string>("CameraType") ?? CameraType;
             Width = settings.Value<int?>("Width") ?? Width;
             Height = settings.Value<int?>("Height") ?? Height;
+            AspectRatio = settings.Value<string>("AspectRatio") ?? AspectRatio;
+            PortraitToggle = settings.Value<bool?>("Portrait") ?? PortraitToggle;
             FPS = settings.Value<int?>("FPS") ?? FPS;
             SpecifiedCameraName = settings.Value<string>("SpecifiedCameraName") ?? SpecifiedCameraName;
             string presetStr = settings.Value<string>("Preset") ?? Preset.ToString();
@@ -83,6 +88,8 @@ namespace RenderMod.Render
                 ["CameraType"] = CameraType,
                 ["Width"] = Width,
                 ["Height"] = Height,
+                ["AspectRatio"] = AspectRatio,
+                ["PortraitToggle"] = PortraitToggle,
                 ["FPS"] = FPS,
                 ["SpecifiedCameraName"] = SpecifiedCameraName,
                 ["Preset"] = Preset.ToString(),

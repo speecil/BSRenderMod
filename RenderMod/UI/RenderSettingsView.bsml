@@ -13,26 +13,39 @@
 				</vertical>
 			</tab>
 		<!-- Width & Height -->
-		<tab tab-name="Video" tags="tabs">
+		<tab tab-name="Resolution" tags="tabs">
 			<vertical>
 				<text text="Resolution" font-size="4" font-style="Bold" align="Center" color="#FFFFFF"/>
 				<vertical spacing="2" align="Center">
 					<list-setting text="Resolution" bind-value="true" apply-on-change="true" on-change="OnResolutionChanged" value="resolution" options="resolution-options" />
 				</vertical>
 
+				<!-- Aspect Ratio -->
+				<text text="Aspect Ratio Settings" font-size="4" font-style="Bold" align="Center" color="#FFFFFF"/>
+				<vertical spacing="2" align="Center">
+                	<list-setting text="Aspect Ratio" bind-value="true" apply-on-change="true" on-change="OnAspectRatioChanged" value="aspectRatio" options="aspectRatio-options" />
+                </vertical>
+                
+                <!-- Portrait toggle -->
+                <toggle-setting apply-on-change="true" id='portrait-toggle' text='Enable portrait aspect ratios?' value="portraitToggle" on-change='OnPortraitToggleChanged'/>
+                <text id="resolutionwarningText" text="" align="Center" active="true" font-size="3" font-color="red" />
+			</vertical>
+		</tab>
+		<tab tab-name="FPS &amp; Bitrate" tags="tabs">
+        	<vertical>
 				<!-- FPS -->
 				<text text="FPS Settings" font-size="4" font-style="Bold" align="Center" color="#FFFFFF"/>
 				<vertical spacing="2" align="Center">
 					<increment-setting bind-value="true" text="Render FPS" id="fps" min="30" max="480" increment="30" integer-only="true" apply-on-change="true" value="fps" on-change="OnFPSChanged"/>
 				</vertical>
-
-				<!-- Bitrate -->
-				<text text="Bitrate Settings" font-size="4" font-style="Bold" align="Center" color="#FFFFFF"/>
-				<increment-setting bind-value="true" text="Video Bitrate (kbps)" id="bitrate" min="5000" max="150000" increment="5000" integer-only="true" apply-on-change="true" value="bitrate" on-change="OnBitrateChanged"/>
-				<increment-setting bind-value="true" text="Audio Bitrate (kbps)" id="audioBitrate" min="64" max="320" increment="32" integer-only="true" apply-on-change="true" value="audioBitrate" on-change="OnAudioBitrateChanged"/>
-				<text id="videowarningText" text="" align="Center" active="true" font-size="3" font-color="red" />
-			</vertical>
-		</tab>
+        	    
+        		<!-- Bitrate -->
+        		<text text="Bitrate Settings" font-size="4" font-style="Bold" align="Center" color="#FFFFFF"/>
+        		<increment-setting bind-value="true" text="Video Bitrate (kbps)" id="bitrate" min="5000" max="150000" increment="5000" integer-only="true" apply-on-change="true" value="bitrate" on-change="OnBitrateChanged"/>
+        		<increment-setting bind-value="true" text="Audio Bitrate (kbps)" id="audioBitrate" min="64" max="320" increment="32" integer-only="true" apply-on-change="true" value="audioBitrate" on-change="OnAudioBitrateChanged"/>
+        		<text id="bitratewarningText" text="" align="Center" active="true" font-size="3" font-color="red" />
+        	</vertical>
+        </tab>
 
 		<tab tab-name="Camera" tags="tabs">
 			<vertical preferred-height='90' child-align='MiddleCenter'>
