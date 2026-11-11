@@ -24,6 +24,7 @@ namespace RenderMod.Render
         public static string AspectRatio = "16:9";
         public static bool PortraitToggle = false;
         public static int FPS = 60;
+        public static int AntiAliasing = 1;
 
         public static QualityPreset Preset = QualityPreset.Medium;
         public static int BitrateKbps = 10000;
@@ -56,6 +57,9 @@ namespace RenderMod.Render
             AspectRatio = s.Value<string>("AspectRatio") ?? AspectRatio;
             PortraitToggle = s.Value<bool?>("PortraitToggle") ?? PortraitToggle;
             FPS = s.Value<int?>("FPS") ?? FPS;
+            AntiAliasing = s.Value<int?>("AntiAliasing") ?? AntiAliasing;
+            if (AntiAliasing != 2 && AntiAliasing != 4 && AntiAliasing != 8)
+                AntiAliasing = 1;
             if (System.Enum.TryParse(s.Value<string>("Preset"), out QualityPreset preset))
                 Preset = preset;
             BitrateKbps = s.Value<int?>("BitrateKbps") ?? BitrateKbps;
@@ -78,6 +82,7 @@ namespace RenderMod.Render
                 ["AspectRatio"] = AspectRatio,
                 ["PortraitToggle"] = PortraitToggle,
                 ["FPS"] = FPS,
+                ["AntiAliasing"] = AntiAliasing,
                 ["Preset"] = Preset.ToString(),
                 ["BitrateKbps"] = BitrateKbps,
                 ["VideoCodec"] = VideoCodec,

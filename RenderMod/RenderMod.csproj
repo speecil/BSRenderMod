@@ -342,7 +342,8 @@
     <DefineConstants Condition="'$(BSVersion)' == '1.42.3'">$(DefineConstants);BS_1_42</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
-    <None Include="Manifests\*.json" />
+    <None Include="Manifests\*.json" Exclude="Manifests\manifest.$(BSVersion).json" />
+    <EmbeddedResource Include="Manifests\manifest.$(BSVersion).json" LogicalName="RenderMod.manifest.json" />
   </ItemGroup>
   <Target Name="SelectManifest" BeforeTargets="BSMT_GetProjectInfo;BeforeBuild">
     <Copy SourceFiles="Manifests\manifest.$(BSVersion).json" DestinationFiles="manifest.json" />
