@@ -42,6 +42,7 @@ namespace RenderMod.Render
         private CameraState _originalCameraState;
         private ReplayCameraCaptureDriver _cameraDriver;
         private RenderTexture _rt;
+        private RenderTexture _resolvedRt; // only with aa
         private FFmpegPipe _pipe;
         private byte[] _frameBuffer;
         private ReplayAudioCapture _audioCapture;
@@ -105,17 +106,14 @@ namespace RenderMod.Render
 
         private void SetupCamera()
         {
-            _rt = new RenderTexture(_w, _h, 24, RenderTextureFormat.ARGB32)
-            {
-                useMipMap = false,
-                autoGenerateMips = false,
-                wrapMode = TextureWrapMode.Clamp,
-                filterMode = FilterMode.Bilinear
-            };
-            _rt.Create();
+            _rt = CreateTexture(24, ReplayRenderSettings.AntiAliasing);
+            // gpu readback cant read a multisampled texture
+            if (ReplayRenderSettings.AntiAliasing > 1)
+                _resolvedRt = CreateTexture(0, 1);
 
             _originalCameraState = new CameraState(_camera);
             _camera.targetTexture = _rt;
+            _camera.allowMSAA = ReplayRenderSettings.AntiAliasing > 1;
             _camera.stereoTargetEye = StereoTargetEyeMask.None;
             _camera.aspect = _w / (float)_h;
             _camera.pixelRect = new Rect(0f, 0f, _w, _h);
@@ -130,6 +128,20 @@ namespace RenderMod.Render
             _cameraDriver = _camera.gameObject.AddComponent<ReplayCameraCaptureDriver>();
             _cameraDriver.FrameRendered += OnFrameRendered;
             _cameraDriver.Begin(_camera, _fps);
+        }
+
+        private RenderTexture CreateTexture(int depth, int antiAliasing)
+        {
+            var rt = new RenderTexture(_w, _h, depth, RenderTextureFormat.ARGB32)
+            {
+                antiAliasing = antiAliasing,
+                useMipMap = false,
+                autoGenerateMips = false,
+                wrapMode = TextureWrapMode.Clamp,
+                filterMode = FilterMode.Bilinear
+            };
+            rt.Create();
+            return rt;
         }
 
         private void SetupAudio()
@@ -160,7 +172,14 @@ namespace RenderMod.Render
             if (!_ready)
                 return;
 
-            AsyncGPUReadback.Request(_rt, 0, TextureFormat.RGB24, req =>
+            var frame = _rt;
+            if (_resolvedRt != null)
+            {
+                Graphics.Blit(_rt, _resolvedRt);
+                frame = _resolvedRt;
+            }
+
+            AsyncGPUReadback.Request(frame, 0, TextureFormat.RGB24, req =>
             {
                 if (req.hasError)
                 {
@@ -236,6 +255,11 @@ namespace RenderMod.Render
 
             _rt.Release();
             UnityEngine.Object.Destroy(_rt);
+            if (_resolvedRt != null)
+            {
+                _resolvedRt.Release();
+                UnityEngine.Object.Destroy(_resolvedRt);
+            }
             _progressUI.Hide();
         }
 
@@ -297,7 +321,7 @@ namespace RenderMod.Render
             private readonly RenderTexture _target;
             private readonly StereoTargetEyeMask _stereoTargetEye;
             private readonly Rect _pixelRect, _rect;
-            private readonly bool _enabled;
+            private readonly bool _enabled, _allowMSAA;
 
             public CameraState(Camera camera)
             {
@@ -306,6 +330,7 @@ namespace RenderMod.Render
                 _pixelRect = camera.pixelRect;
                 _rect = camera.rect;
                 _enabled = camera.enabled;
+                _allowMSAA = camera.allowMSAA;
             }
 
             public void Restore(Camera camera)
@@ -316,6 +341,7 @@ namespace RenderMod.Render
                 camera.pixelRect = _pixelRect;
                 camera.ResetAspect();
                 camera.ResetCullingMatrix();
+                camera.allowMSAA = _allowMSAA;
                 camera.enabled = _enabled;
             }
         }

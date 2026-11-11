@@ -9,6 +9,7 @@
 					<!-- Video Codec Dropdown -->
 					<text text="Select the video codec" font-size="4" font-style="Bold" align="Center" color="#FFFFFF"/>
 					<dropdown-list-setting bind-value="true" apply-on-change="true" id='videoCodecDropdown' value='video-codec' options='video-codec-options' text='Video Codec' on-change='OnVideoCodecChanged'/>
+					<dropdown-list-setting bind-value="true" apply-on-change="true" value='antiAliasing' options='antiAliasing-options' text='Anti-aliasing' on-change='OnAntiAliasingChanged'/>
 					<text id="qualitywarningText" text="" align="Center" active="true" font-size="3" font-color="red" />
 				</vertical>
 			</tab>

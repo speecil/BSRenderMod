@@ -105,6 +105,8 @@ namespace RenderMod.UI
         [UIValue("video-codec")] private string videoCodec = ReplayRenderSettings.VideoCodec;
         [UIValue("preset-options")] private List<object> presetOptions = Enum.GetNames(typeof(QualityPreset)).Cast<object>().ToList();
         [UIValue("preset-option")] private string currentPreset = ReplayRenderSettings.Preset.ToString();
+        [UIValue("antiAliasing-options")] private List<object> antiAliasingOptions = new List<object> { "Off", "2x", "4x", "8x" };
+        [UIValue("antiAliasing")] private string antiAliasing = ReplayRenderSettings.AntiAliasing > 1 ? ReplayRenderSettings.AntiAliasing + "x" : "Off";
 
         [UIComponent("encoder-test-text")] private TextMeshProUGUI encoderTestText = null;
 
@@ -140,6 +142,13 @@ namespace RenderMod.UI
         {
             if (Enum.TryParse(value, out QualityPreset preset))
                 ReplayRenderSettings.Preset = preset;
+            UpdateWarnings();
+        }
+
+        [UIAction("OnAntiAliasingChanged")]
+        private void OnAntiAliasingChanged(string value)
+        {
+            ReplayRenderSettings.AntiAliasing = value == "Off" ? 1 : int.Parse(value.TrimEnd('x'));
             UpdateWarnings();
         }
 
