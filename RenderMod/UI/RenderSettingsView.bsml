@@ -37,7 +37,7 @@
 				<!-- FPS -->
 				<text text="FPS Settings" font-size="4" font-style="Bold" align="Center" color="#FFFFFF"/>
 				<vertical spacing="2" align="Center">
-					<increment-setting bind-value="true" text="Render FPS" id="fps" min="30" max="480" increment="30" integer-only="true" apply-on-change="true" value="fps" on-change="OnFPSChanged"/>
+					<increment-setting bind-value="true" text="Render FPS" id="fps" min="30" max="960" increment="30" integer-only="true" apply-on-change="true" value="fps" on-change="OnFPSChanged"/>
 				</vertical>
         	    
         		<!-- Bitrate -->

@@ -3,10 +3,9 @@ using RenderMod.Util;
 using SiraUtil.Affinity;
 using SiraUtil.Logging;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Unity.Collections;
-using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine;
 using UnityEngine.Rendering;
 using Zenject;
@@ -42,9 +41,10 @@ namespace RenderMod.Render
         private CameraState _originalCameraState;
         private ReplayCameraCaptureDriver _cameraDriver;
         private RenderTexture _rt;
-        private RenderTexture _resolvedRt; // only with aa
+        private RenderTexture _outputRt;
         private FFmpegPipe _pipe;
-        private byte[] _frameBuffer;
+        private readonly Queue<AsyncGPUReadbackRequest> _readbacks = new Queue<AsyncGPUReadbackRequest>();
+        private const int MaxReadbacksInFlight = 3;
         private ReplayAudioCapture _audioCapture;
         private GameObject _createdListener;
 
@@ -55,6 +55,7 @@ namespace RenderMod.Render
         private bool _timeStepSet;
         private int _audioResyncCount;
         private bool _ready;
+        private bool _songEnded;
 
         public void Initialize()
         {
@@ -105,8 +106,7 @@ namespace RenderMod.Render
 
             var (_, encoderArgs) = EncoderHelpers.BuildEncoderArgs();
             string ffArgs = $"-y -f rawvideo -pix_fmt rgb24 -s {_w}x{_h} -r {_fps} -i - {encoderArgs} \"{_videoPath}\"";
-            _pipe = new FFmpegPipe(ffArgs);
-            _frameBuffer = new byte[_w * _h * 3];
+            _pipe = new FFmpegPipe(ffArgs, _w * _h * 3);
             _log.Notice($"FFmpeg started: {ffArgs}");
 
             SetTimeStep();
@@ -120,9 +120,7 @@ namespace RenderMod.Render
         private void SetupCamera()
         {
             _rt = CreateTexture(24, ReplayRenderSettings.AntiAliasing);
-            // gpu readback cant read a multisampled texture
-            if (ReplayRenderSettings.AntiAliasing > 1)
-                _resolvedRt = CreateTexture(0, 1);
+            _outputRt = CreateTexture(0, 1);
 
             _originalCameraState = new CameraState(_camera);
             _camera.targetTexture = _rt;
@@ -187,36 +185,36 @@ namespace RenderMod.Render
 
         private void OnFrameRendered(int frameCount)
         {
-            if (!_ready)
+            if (!_ready || _songEnded)
                 return;
 
-            var frame = _rt;
-            if (_resolvedRt != null)
-            {
-                Graphics.Blit(_rt, _resolvedRt);
-                frame = _resolvedRt;
-            }
+            Graphics.Blit(_rt, _outputRt, new Vector2(1f, -1f), new Vector2(0f, 1f));
 
-            AsyncGPUReadback.Request(frame, 0, TextureFormat.RGB24, req =>
+            _readbacks.Enqueue(AsyncGPUReadback.Request(_outputRt, 0, TextureFormat.RGB24));
+            DrainReadbacks(MaxReadbacksInFlight);
+        }
+
+        private void DrainReadbacks(int keepInFlight)
+        {
+            while (_readbacks.Count > 0)
             {
+                var req = _readbacks.Peek();
+                if (!req.done)
+                {
+                    if (_readbacks.Count <= keepInFlight)
+                        return;
+                    req.WaitForCompletion();
+                }
+                _readbacks.Dequeue();
+
                 if (req.hasError)
                 {
                     _log.Warn("GPU readback failed");
-                    return;
+                    continue;
                 }
-                FlipFrame(req.GetData<byte>(), _frameBuffer, _w, _h);
-                _pipe.WriteFrame(_frameBuffer);
-            }).WaitForCompletion();
-        }
-
-        private static unsafe void FlipFrame(NativeArray<byte> src, byte[] dst, int width, int height)
-        {
-            byte* srcPtr = (byte*)src.GetUnsafeReadOnlyPtr();
-            int stride = width * 3;
-            fixed (byte* dstPtr = dst)
-            {
-                for (int y = 0; y < height; y++)
-                    Buffer.MemoryCopy(srcPtr + y * stride, dstPtr + (height - 1 - y) * stride, stride, stride);
+                byte[] frame = _pipe.RentFrame();
+                req.GetData<byte>().CopyTo(frame);
+                _pipe.WriteFrame(frame);
             }
         }
 
@@ -228,8 +226,12 @@ namespace RenderMod.Render
             UnityAudioSyncHook.UpdateGameTime();
             _progressUI.UpdateProgress(_atsc.songTime / Mathf.Max(0.0001f, _atsc.songLength));
 
-            if (_atsc.songTime + Mathf.Epsilon >= _atsc.songEndTime)
+            if (!_songEnded && _atsc.songTime + Mathf.Epsilon >= _atsc.songEndTime)
+            {
+                _songEnded = true;
+                DrainReadbacks(0);
                 _returnToMenuController.ReturnToMenu();
+            }
         }
 
         public void LateDispose()
@@ -254,7 +256,7 @@ namespace RenderMod.Render
                 _log.Warn($"Song audio drifted and was re-seeked {_audioResyncCount} time(s).");
             UnityAudioSyncHook.SetSyncTimes(false);
 
-            AsyncGPUReadback.WaitAllRequests();
+            DrainReadbacks(0);
             _pipe.Close();
 
             _log.Notice($"Captured {_audioCapture.CapturedSeconds:0.000}s of audio");
@@ -279,11 +281,8 @@ namespace RenderMod.Render
 
             _rt.Release();
             UnityEngine.Object.Destroy(_rt);
-            if (_resolvedRt != null)
-            {
-                _resolvedRt.Release();
-                UnityEngine.Object.Destroy(_resolvedRt);
-            }
+            _outputRt.Release();
+            UnityEngine.Object.Destroy(_outputRt);
             _progressUI.Hide();
         }
 

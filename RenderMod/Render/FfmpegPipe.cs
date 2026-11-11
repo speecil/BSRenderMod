@@ -1,7 +1,9 @@
 using IPA.Utilities;
 using System;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
+using System.Threading;
 using Debug = UnityEngine.Debug;
 
 namespace RenderMod.Render
@@ -16,8 +18,15 @@ namespace RenderMod.Render
         private Stream _input;
         private bool _closed;
 
-        public FFmpegPipe(string args)
+        private readonly BlockingCollection<byte[]> _free = new BlockingCollection<byte[]>();
+        private readonly BlockingCollection<byte[]> _pending = new BlockingCollection<byte[]>();
+        private readonly Thread _writer;
+
+        public FFmpegPipe(string args, int frameSize, int buffers = 3)
         {
+            for (int i = 0; i < buffers; i++)
+                _free.Add(new byte[frameSize]);
+
             _ffmpeg = new Process { StartInfo = CreateStartInfo(args) };
             _ffmpeg.StartInfo.RedirectStandardInput = true;
 
@@ -31,23 +40,39 @@ namespace RenderMod.Render
             {
                 Debug.LogError($"Failed to start FFmpeg: {ex}");
             }
+
+            _writer = new Thread(WriteLoop) { IsBackground = true, Name = "RenderMod ffmpeg writer" };
+            _writer.Start();
         }
+
+        public byte[] RentFrame() => _free.Take();
 
         public void WriteFrame(byte[] frame)
         {
-            if (_closed) return;
+            if (_closed)
+                _free.Add(frame);
+            else
+                _pending.Add(frame);
+        }
 
-            try
+        private void WriteLoop()
+        {
+            bool failed = false;
+            foreach (byte[] frame in _pending.GetConsumingEnumerable())
             {
-                _input?.Write(frame, 0, frame.Length);
-            }
-            catch (ObjectDisposedException)
-            {
-            }
-            catch (Exception ex)
-            {
-                Debug.LogError($"FFmpeg WriteFrame failed: {ex.Message}");
-                Close();
+                if (!failed && _input != null)
+                {
+                    try
+                    {
+                        _input.Write(frame, 0, frame.Length);
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.LogError($"FFmpeg WriteFrame failed: {ex.Message}");
+                        failed = true;
+                    }
+                }
+                _free.Add(frame);
             }
         }
 
@@ -55,6 +80,9 @@ namespace RenderMod.Render
         {
             if (_closed) return;
             _closed = true;
+
+            _pending.CompleteAdding();
+            _writer.Join();
 
             try
             {
