@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using IPALogger = IPA.Logging.Logger;
@@ -10,26 +11,51 @@ namespace RenderMod.Render
     // additionally, this patch was assisted with claudes help in understanding the assembly and how to hook it properly as native patching is new to me
     internal static unsafe class UnityAudioSyncHook
     {
-        // FMOD output mix, UnityPlayer.dll: base + 0x171EFF0.
-        private const long KnownRva = 0x171EFF0;
-
-        private static readonly int[] MixPattern =
+        private class MixTarget
         {
-            0x48, 0x89, 0x5C, 0x24, 0x18,       // mov [rsp+18h], rbx
-            0x48, 0x89, 0x54, 0x24, 0x10,       // mov [rsp+10h], rdx
-            0x48, 0x89, 0x4C, 0x24, 0x08,       // mov [rsp+8], rcx
-            0x55, 0x56, 0x57,                   // push rbp, rsi, rdi
-            0x41, 0x54, 0x41, 0x55,             // push r12, r13
-            0x41, 0x56, 0x41, 0x57,             // push r14, r15
-            0x48, 0x81, 0xEC, -1, -1, -1, -1,   // sub rsp, imm32
-            0x4C, 0x8B, 0x49, 0x60,             // mov r9, [rcx+60h]  (output->system)
-            0x45, 0x33, 0xED,                   // xor r13d, r13d
-            0x41, 0x8B, 0xF8,                   // mov edi, r8d
-            0x4C, 0x8B, 0xE2                    // mov r12, rdx
+            public string Version;
+            public long Rva;
+            public int[] Pattern;
+            public int StolenBytes;
+        }
+
+        private static readonly MixTarget[] Targets =
+        {
+            new MixTarget
+            {
+                Version = "1.40.8",
+                Rva = 0x171EFF0,
+                StolenBytes = 15, // mov [rsp+18h], rbx; mov [rsp+10h], rdx; mov [rsp+8], rcx
+                Pattern = ParsePattern(
+                    "48 89 5C 24 18 48 89 54 24 10 48 89 4C 24 08 55 56 57 41 54 41 55 41 56 41 57 " +
+                    "48 81 EC ?? ?? ?? ?? 4C 8B 49 60 45 33 ED 41 8B F8 4C 8B E2")
+            },
+            new MixTarget
+            {
+                Version = "1.29.1",
+                Rva = 0xF92F50,
+                StolenBytes = 12, // mov rax, rsp; mov [rax+10h], rdx; mov [rax+8], rcx; push rbp
+                Pattern = ParsePattern(
+                    "48 8B C4 48 89 50 10 48 89 48 08 55 56 57 41 54 41 55 41 56 41 57 48 81 EC ?? ?? ?? ?? " +
+                    "48 C7 80 38 FF FF FF FE FF FF FF 48 89 58 18 0F 29 70 B8 0F 29 78 A8 44 0F 29 40 98 " +
+                    "44 0F 29 48 88 44 0F 29 90 78 FF FF FF 44 0F 29 98 68 FF FF FF 44 0F 29 A0 58 FF FF FF " +
+                    "44 0F 29 A8 48 FF FF FF 41 8B F8 48 8B F1 45 33 E4 45 8B F4 44 89 64 24 40 4C 8B 49 60")
+            },
+            new MixTarget
+            {
+                // same UnityPlayer.dll as 1.40.13 - 1.44.3
+                Version = "1.42.3",
+                Rva = 0x175BA50,
+                StolenBytes = 15, // mov [rsp+18h], rbx; mov [rsp+10h], rdx; mov [rsp+8], rcx
+                Pattern = ParsePattern(
+                    "48 89 5C 24 18 48 89 54 24 10 48 89 4C 24 08 55 56 57 41 54 41 55 41 56 41 57 " +
+                    "48 81 EC ?? ?? ?? ?? 48 8B 41 60 45 33 D2 45 8B F0 48 8B F9 44 89 94 24 28 01 00 00 " +
+                    "45 8B EA 48 8B 98 10 0C 00 00 48 8B A8 18 0C 00 00")
+            },
         };
 
-        private const int StolenBytes = 15;
-        private const int JumpSize = 12; // mov rax, imm64; jmp rax
+        private const int JumpSize = 12;         // mov rax, imm64; jmp rax (entry patch, rax is free at entry)
+        private const int IndirectJumpSize = 14; // jmp [rip+0]; dq target (trampoline return, keeps rax: 1.29.1 uses it as a frame pointer)
 
         private const int TimeoutLoops = 200;
 
@@ -64,23 +90,24 @@ namespace RenderMod.Render
             if (module == IntPtr.Zero)
                 throw new InvalidOperationException("UnityPlayer.dll is not loaded.");
 
-            IntPtr target = FindMixFunction((byte*)module);
+            IntPtr target = FindMixFunction((byte*)module, out MixTarget mix);
             if (target == IntPtr.Zero)
                 throw new InvalidOperationException("FMOD output mix function not found in UnityPlayer.dll (unsupported Unity build).");
+            int stolenBytes = mix.StolenBytes;
 
             // trampoline
-            IntPtr trampoline = VirtualAlloc(IntPtr.Zero, (UIntPtr)(StolenBytes + JumpSize), MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+            IntPtr trampoline = VirtualAlloc(IntPtr.Zero, (UIntPtr)(stolenBytes + IndirectJumpSize), MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
             if (trampoline == IntPtr.Zero)
                 throw new InvalidOperationException("VirtualAlloc failed.");
 
-            Buffer.MemoryCopy((void*)target, (void*)trampoline, StolenBytes, StolenBytes);
-            WriteAbsoluteJump((byte*)trampoline + StolenBytes, (byte*)target + StolenBytes);
+            Buffer.MemoryCopy((void*)target, (void*)trampoline, stolenBytes, stolenBytes);
+            WriteIndirectJump((byte*)trampoline + stolenBytes, (byte*)target + stolenBytes);
 
             _hookDelegate = Hook;
             _original = Marshal.GetDelegateForFunctionPointer<MixFunction>(trampoline);
             IntPtr hook = Marshal.GetFunctionPointerForDelegate(_hookDelegate);
 
-            if (!VirtualProtect(target, (UIntPtr)StolenBytes, PAGE_EXECUTE_READWRITE, out uint oldProtect))
+            if (!VirtualProtect(target, (UIntPtr)stolenBytes, PAGE_EXECUTE_READWRITE, out uint oldProtect))
             {
                 _original = null;
                 VirtualFree(trampoline, UIntPtr.Zero, MEM_RELEASE);
@@ -88,13 +115,13 @@ namespace RenderMod.Render
             }
 
             WriteAbsoluteJump((byte*)target, (byte*)hook);
-            for (int i = JumpSize; i < StolenBytes; i++)
+            for (int i = JumpSize; i < stolenBytes; i++)
                 ((byte*)target)[i] = 0x90;
 
-            VirtualProtect(target, (UIntPtr)StolenBytes, oldProtect, out _);
-            FlushInstructionCache(GetCurrentProcess(), target, (UIntPtr)StolenBytes);
+            VirtualProtect(target, (UIntPtr)stolenBytes, oldProtect, out _);
+            FlushInstructionCache(GetCurrentProcess(), target, (UIntPtr)stolenBytes);
 
-            log.Notice($"Audio sync hook installed at UnityPlayer.dll+0x{(long)target - (long)module:X}");
+            log.Notice($"Audio sync hook installed for {mix.Version} at UnityPlayer.dll+0x{(long)target - (long)module:X}");
         }
 
         public static void SetSyncTimes(bool value)
@@ -189,13 +216,17 @@ namespace RenderMod.Render
             return _original(output, buffer, length);
         }
 
-        private static IntPtr FindMixFunction(byte* module)
+        private static IntPtr FindMixFunction(byte* module, out MixTarget mix)
         {
             byte* pe = module + *(int*)(module + 0x3C);
             uint sizeOfImage = *(uint*)(pe + 24 + 56);
 
-            if (KnownRva + MixPattern.Length <= sizeOfImage && MatchesPattern(module + KnownRva))
-                return (IntPtr)(module + KnownRva);
+            foreach (var target in Targets)
+            {
+                mix = target;
+                if (target.Rva + target.Pattern.Length <= sizeOfImage && MatchesPattern(module + target.Rva, target.Pattern))
+                    return (IntPtr)(module + target.Rva);
+            }
 
             int sectionCount = *(ushort*)(pe + 6);
             byte* section = pe + 24 + *(ushort*)(pe + 20);
@@ -205,36 +236,63 @@ namespace RenderMod.Render
                     continue;
 
                 byte* start = module + *(uint*)(section + 12);
-                byte* end = start + *(uint*)(section + 8) - MixPattern.Length;
-                IntPtr found = IntPtr.Zero;
-                for (byte* p = start; p <= end; p++)
+                foreach (var target in Targets)
                 {
-                    if (*p != MixPattern[0] || !MatchesPattern(p))
-                        continue;
+                    mix = target;
+                    IntPtr found = ScanForPattern(start, *(uint*)(section + 8), target.Pattern);
                     if (found != IntPtr.Zero)
-                        return IntPtr.Zero; // ambiguous, refuse to hook
-                    found = (IntPtr)p;
+                        return found;
                 }
-                return found;
+                break;
             }
+
+            mix = null;
             return IntPtr.Zero;
         }
 
-        private static bool MatchesPattern(byte* address)
+        // returns the only match, or zero if there are none or more than one
+        private static IntPtr ScanForPattern(byte* start, uint length, int[] pattern)
         {
-            for (int i = 0; i < MixPattern.Length; i++)
+            byte* end = start + length - pattern.Length;
+            IntPtr found = IntPtr.Zero;
+            for (byte* p = start; p <= end; p++)
             {
-                if (MixPattern[i] >= 0 && address[i] != (byte)MixPattern[i])
+                if (*p != pattern[0] || !MatchesPattern(p, pattern))
+                    continue;
+                if (found != IntPtr.Zero)
+                    return IntPtr.Zero;
+                found = (IntPtr)p;
+            }
+            return found;
+        }
+
+        private static bool MatchesPattern(byte* address, int[] pattern)
+        {
+            for (int i = 0; i < pattern.Length; i++)
+            {
+                if (pattern[i] >= 0 && address[i] != (byte)pattern[i])
                     return false;
             }
             return true;
         }
+
+        private static int[] ParsePattern(string pattern) =>
+            pattern.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(b => b == "??" ? -1 : Convert.ToInt32(b, 16))
+                .ToArray();
 
         private static void WriteAbsoluteJump(byte* at, byte* destination)
         {
             at[0] = 0x48; at[1] = 0xB8; // mov rax, imm64
             *(ulong*)(at + 2) = (ulong)destination;
             at[10] = 0xFF; at[11] = 0xE0; // jmp rax
+        }
+
+        private static void WriteIndirectJump(byte* at, byte* destination)
+        {
+            at[0] = 0xFF; at[1] = 0x25; // jmp qword ptr [rip+0]
+            *(int*)(at + 2) = 0;
+            *(ulong*)(at + 6) = (ulong)destination;
         }
 
         private const uint MEM_COMMIT = 0x1000;

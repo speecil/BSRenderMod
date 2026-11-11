@@ -9,7 +9,11 @@ namespace RenderMod.UI
     {
         [Inject] private readonly RenderSettingsView _renderSettingsView = null;
 
+#if BS_1_29
+        public override void DidActivate(bool firstActivation, bool addedToHierarchy, bool screenSystemEnabling)
+#else
         protected override void DidActivate(bool firstActivation, bool addedToHierarchy, bool screenSystemEnabling)
+#endif
         {
             if (firstActivation)
             {
@@ -19,7 +23,11 @@ namespace RenderMod.UI
             }
         }
 
+#if BS_1_29
+        public override void BackButtonWasPressed(ViewController topViewController)
+#else
         protected override void BackButtonWasPressed(ViewController topViewController)
+#endif
         {
             ReplayRenderSettings.SaveSettings();
             this.GetField<FlowCoordinator, FlowCoordinator>("_parentFlowCoordinator")

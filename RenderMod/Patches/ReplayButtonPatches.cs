@@ -86,8 +86,13 @@ namespace RenderMod.Patches
 
         private static void ShowPrompt(SinglePlayerLevelSelectionFlowCoordinator flow, string message, Action onYes)
         {
+#if BS_1_29
+            var view = flow.GetField<SimpleDialogPromptViewController, SinglePlayerLevelSelectionFlowCoordinator>(
+                "_simpleDialogPromptViewController");
+#else
             var view = flow.GetField<SafeAreaFocusedSimpleDialogPromptViewController, SinglePlayerLevelSelectionFlowCoordinator>(
                 "_safeAreaFocusedSimpleDialogPromptViewController");
+#endif
 
             view.Init("Render Mod", message, "Yes", "No", button =>
             {

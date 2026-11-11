@@ -32,7 +32,10 @@ From there, you can:
 
 ## Notes
 
-- ****FFMPEG must be installed from your target mod manager and in `Beat Saber/Libs`****
+- Needs `ffmpeg.exe` in `Libs` from a current **release** build (e.g. gyan.dev "release full"), not the
+  bundled 4.3.x and not a git/nightly build. Old builds can't use NVENC on current NVIDIA drivers, and
+  newer ffmpeg needs a matching driver (9.x needs 610+). If hardware encoding fails, the log says which
+  of the two to update, and the mod falls back to software encoding.
 - ****CameraUtils must be installed from your target mod manager and in `Beat Saber/Plugins`****
 - This mod renders from replay data and at best, renders close to real time with lower settings.
 
@@ -43,3 +46,35 @@ From there, you can:
   *(If you are using BSManager, your Wine prefix should be here: `/home/username/BSManager/SharedContent/compatdata/pfx/drive_c/windows/system32/`)*
 
   *(If that still doesn't work, check `syswow64` for `nvcuvid.dll`, `nvencodeapi64.dll` and `nvoptix.dll`, and if you find those there, move those to `system32`)*
+
+## Building
+
+The project builds for several game versions from one codebase. Pick the configuration matching
+your install, e.g. `Release-1.42.3`. Each configuration sets the game version, which selects the
+`#if` defines (`BS_1_29`, `BS_1_40`, `BS_1_42`), the references and the manifest.
+
+| Configuration | Use for game versions |
+|---|---|
+| `*-1.29.1` | 1.17.0 – 1.29.1 |
+| `*-1.40.8` | 1.37.2 – 1.40.8 |
+| `*-1.42.3` | 1.40.13 – 1.44.3 |
+
+Set `BeatSaberDir` in `RenderMod.csproj.user` as usual. To build for several installs, give each
+version its own path:
+
+```xml
+<BeatSaberDir Condition="'$(BSVersion)' == '1.29.1'">D:\Beat Saber 1.29.1</BeatSaberDir>
+<BeatSaberDir Condition="'$(BSVersion)' == '1.42.3'">D:\Beat Saber 1.42.3</BeatSaberDir>
+```
+
+- `manifest.json` is generated on build from `Manifests/manifest.<version>.json`; edit those instead.
+- Visual Studio's Reference Paths are ignored; references always come from `BeatSaberDir`.
+- The mod only loads when the game is launched with `fpfc`, and needs `ffmpeg.exe` in `Libs`.
+
+### Adding a game version
+1. In `RenderMod.csproj`, add `Debug-x`/`Release-x` configuration blocks setting `BSVersion` and a
+   `DefineConstants` line for it, then add both configurations to the solution.
+2. Add `Manifests/manifest.x.json`.
+3. Wrap API differences in `#if`.
+4. If its `UnityPlayer.dll` differs from the supported ones, add a `MixTarget` (RVA, byte pattern,
+   stolen bytes) in `NativePatches/UnityAudioSyncHook.cs`, or audio won't be synced.
