@@ -8,7 +8,11 @@ namespace RenderMod.UI
     {
         [Inject] private readonly MainFlowCoordinator _mainFlowCoordinator = null;
         [Inject] private readonly RenderSettingsFlow _renderSettingsFlow = null;
+#if BS_1_29
+        private MenuButtons _menuButtons => MenuButtons.instance;
+#else
         [Inject] private readonly MenuButtons _menuButtons = null;
+#endif
 
         private MenuButton _menuButton;
 

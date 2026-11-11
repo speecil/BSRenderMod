@@ -10,6 +10,11 @@ using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine;
 using UnityEngine.Rendering;
 using Zenject;
+#if BS_1_42
+using PlaybackState = IAudioTimeSource.State;
+#else
+using PlaybackState = AudioTimeSyncController.State;
+#endif
 
 namespace RenderMod.Render
 {
@@ -17,8 +22,16 @@ namespace RenderMod.Render
     // UnityAudioSyncHook keeps the audio in sync
     internal class ReplayRenderer : IAffinity, ILateTickable, ILateDisposable
     {
+#if BS_1_29
+        [Inject] private readonly IDifficultyBeatmap _difficultyBeatmap = null;
+        private string SongName => _difficultyBeatmap.level.songName;
+        private BeatmapDifficulty Difficulty => _difficultyBeatmap.difficulty;
+#else
         [Inject] private readonly BeatmapLevel _beatmapLevel = null;
         [Inject] private readonly BeatmapKey _beatmapKey = default;
+        private string SongName => _beatmapLevel.songName;
+        private BeatmapDifficulty Difficulty => _beatmapKey.difficulty;
+#endif
         [Inject] private readonly SiraLog _log = null;
         [Inject] private readonly ReplayProgressUI _progressUI = null;
         [Inject] private readonly StandardLevelReturnToMenuController _returnToMenuController = null;
@@ -68,7 +81,7 @@ namespace RenderMod.Render
             string dir = Path.Combine(ReplayRenderSettings.RenderRoot, "Unfinished");
             Directory.CreateDirectory(dir);
             string baseName = string.Concat(
-                $"replay_{_beatmapLevel.songName}-{_beatmapKey.difficulty}_{DateTime.Now:yyyyMMdd_HHmmss}"
+                $"replay_{SongName}-{Difficulty}_{DateTime.Now:yyyyMMdd_HHmmss}"
                     .Where(c => !Path.GetInvalidFileNameChars().Contains(c)));
             _videoPath = Path.Combine(dir, $"{baseName}_video.{FFmpegPipe.RawFormat}");
             _audioPath = Path.Combine(dir, $"{baseName}_audio.wav");
@@ -228,8 +241,8 @@ namespace RenderMod.Render
 
         private const float AudioResyncThreshold = 0.1f;
 
-        private static readonly AccessTools.FieldRef<AudioTimeSyncController, AudioTimeSyncController.State> AtscState =
-            AccessTools.FieldRefAccess<AudioTimeSyncController, AudioTimeSyncController.State>("_state");
+        private static readonly AccessTools.FieldRef<AudioTimeSyncController, PlaybackState> AtscState =
+            AccessTools.FieldRefAccess<AudioTimeSyncController, PlaybackState>("_state");
         private static readonly AccessTools.FieldRef<AudioTimeSyncController, float> AtscSongTime =
             AccessTools.FieldRefAccess<AudioTimeSyncController, float>("_songTime");
         private static readonly AccessTools.FieldRef<AudioTimeSyncController, float> AtscTimeScale =
@@ -252,7 +265,7 @@ namespace RenderMod.Render
                 return true;
 
             var audioSource = AtscAudioSource(__instance);
-            if (AtscState(__instance) != AudioTimeSyncController.State.Playing || audioSource == null || audioSource.clip == null)
+            if (AtscState(__instance) != PlaybackState.Playing || audioSource == null || audioSource.clip == null)
                 return true;
 
             float delta = Time.deltaTime * AtscTimeScale(__instance);
@@ -268,6 +281,8 @@ namespace RenderMod.Render
             float target = audioSource.loop ? songTime % clipLength : songTime;
             if (Mathf.Abs(audioSource.time - target) > AudioResyncThreshold)
             {
+                _log.Warn($"Re-seeking song audio at song time {target:0.000}s: audio was at {audioSource.time:0.000}s " +
+                          $"({(audioSource.time - target) * 1000f:+0;-0}ms), playing={audioSource.isPlaying}");
                 audioSource.time = target;
                 _audioResyncCount++;
             }

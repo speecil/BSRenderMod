@@ -13,8 +13,12 @@ namespace RenderMod.UI
 {
     internal class UIPatch : IInitializable, IDisposable, IAffinity
     {
-        [Inject] private readonly GameplaySetup _gameplaySetup = null;
         [Inject] private readonly RenderSettingsFlow _renderSettingsFlow = null;
+#if BS_1_29
+        private GameplaySetup _gameplaySetup => GameplaySetup.instance;
+#else
+        [Inject] private readonly GameplaySetup _gameplaySetup = null;
+#endif
 
         private Button _playButton;
 
@@ -36,7 +40,7 @@ namespace RenderMod.UI
 
         public void Initialize()
         {
-            _gameplaySetup.AddTab("Render Mod", "RenderMod.UI.RenderModView.bsml", this, MenuType.Solo);
+            _gameplaySetup?.AddTab("Render Mod", "RenderMod.UI.RenderModView.bsml", this, MenuType.Solo);
         }
 
         public void Dispose()

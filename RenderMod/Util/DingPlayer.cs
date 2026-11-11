@@ -33,7 +33,11 @@ namespace RenderMod.Util
             {
                 yield return www.SendWebRequest();
 
+#if BS_1_29
+                if (www.responseCode == 200)
+#else
                 if (www.result == UnityWebRequest.Result.Success)
+#endif
                     AudioSource.PlayClipAtPoint(DownloadHandlerAudioClip.GetContent(www), Vector3.zero);
                 else
                     _log.Error("Failed to load ding: " + www.error);

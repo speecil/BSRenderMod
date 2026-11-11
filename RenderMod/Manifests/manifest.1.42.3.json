@@ -1,0 +1,17 @@
+{
+  "$schema": "https://raw.githubusercontent.com/bsmg/BSIPA-MetadataFileSchema/master/Schema.json",
+  "id": "RenderMod",
+  "name": "RenderMod",
+  "author": "Riley (Speecil)",
+  "version": "0.0.1+1.42.3",
+  "description": "Renders replays to the Renders folder within your game install",
+  "gameVersion": "1.42.3",
+  "dependsOn": {
+    "BSIPA": "^4.3.7",
+    "SiraUtil": "^3.3.1",
+    "BeatSaberMarkupLanguage": "^1.14.1",
+    "SongCore": "^3.16.0",
+    "CameraUtils": "^1.0.8"
+  },
+  "loadAfter": [ "ScoreSaber", "BeatLeader", "LocalLeaderboard", "AutoPauseStealth" ]
+}

@@ -156,7 +156,7 @@ namespace RenderMod.UI
             encoderTestText.text = $"RESULT: {EncoderHelpers.SelectBestEncoder()} encoder";
         }
 
-        [UIValue("camera-options")] private List<object> cameraOptions = new List<object>();
+        [UIValue("camera-options")] private List<object> cameraOptions = new List<object> { ReplayRenderSettings.SpecifiedCameraName };
         [UIValue("camera-option")] private string cameraSpecifier = ReplayRenderSettings.SpecifiedCameraName;
         [UIValue("cameraType-options")] private List<object> cameraTypeOptions = new List<object> { "Camera2", "ReeCamera", "None" };
         [UIValue("cameraType-option")] private string cameraTypeSpecifier = ReplayRenderSettings.CameraType;
@@ -175,7 +175,11 @@ namespace RenderMod.UI
         {
             ReplayRenderSettings.CameraType = value;
             if (cameraSpecifierDropDown != null)
+#if BS_1_29
+                cameraSpecifierDropDown.interactable = value == "Camera2";
+#else
                 cameraSpecifierDropDown.Interactable = value == "Camera2";
+#endif
             UpdateWarnings();
         }
 
@@ -183,19 +187,30 @@ namespace RenderMod.UI
         {
             base.DidActivate(firstActivation, addedToHierarchy, screenSystemEnabling);
 
-            cameraSpecifierDropDown.Values = CameraUtils.Core.CamerasManager.GetRegisteredCameras()
+            var cameras = CameraUtils.Core.CamerasManager.GetRegisteredCameras()
                 .Where(c => c.CameraFlags != CameraUtils.Core.CameraFlags.Mirror)
                 .Select(c => c.Camera.transform.GetObjectPath(2))
                 .Where(path => !path.Contains("/ReeLayout") && !path.Contains("/Origin/"))
                 .Cast<object>()
                 .ToList();
+            if (!cameras.Contains(ReplayRenderSettings.SpecifiedCameraName))
+                cameras.Insert(0, ReplayRenderSettings.SpecifiedCameraName);
+#if BS_1_29
+            cameraSpecifierDropDown.values = cameras;
+#else
+            cameraSpecifierDropDown.Values = cameras;
+#endif
             cameraSpecifierDropDown.Value = ReplayRenderSettings.SpecifiedCameraName;
             cameraSpecifierDropDown.UpdateChoices();
 
             OnCameraTypeSpecifierChanged(ReplayRenderSettings.CameraType);
 
             if (firstActivation)
+#if BS_1_29
+                tabSelector.textSegmentedControl.SelectCellWithNumber(0);
+#else
                 tabSelector.TextSegmentedControl.SelectCellWithNumber(0);
+#endif
         }
 
         [UIComponent("tabSelector")] private TabSelector tabSelector = null;
