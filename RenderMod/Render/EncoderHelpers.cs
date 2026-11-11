@@ -81,9 +81,18 @@ namespace RenderMod.Render
             return false;
         }
 
+        private static string _preparedEncoder, _preparedCodec;
+
+        public static string PrepareEncoder()
+        {
+            _preparedCodec = ReplayRenderSettings.VideoCodec;
+            return _preparedEncoder = SelectBestEncoder();
+        }
+
         public static (string encoder, string args) BuildEncoderArgs()
         {
-            return BuildEncoderArgs(SelectBestEncoder());
+            bool prepared = _preparedEncoder != null && _preparedCodec == ReplayRenderSettings.VideoCodec;
+            return BuildEncoderArgs(prepared ? _preparedEncoder : PrepareEncoder());
         }
 
         public static (string encoder, string args) BuildEncoderArgs(string encoder)

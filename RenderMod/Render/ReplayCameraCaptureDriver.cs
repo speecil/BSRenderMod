@@ -17,6 +17,7 @@ namespace RenderMod.Render
         private Coroutine _endOfFrameLoop;
 
         public event Action<int> FrameRendered;
+        public event Action FirstFrameCaptured;
 
         public void Begin(Camera camera, int fps)
         {
@@ -46,8 +47,8 @@ namespace RenderMod.Render
 
             _capturedThisFrame = Time.time - _startTime >= _frameDelta * _frameCount;
             _camera.enabled = _capturedThisFrame;
-            if (_capturedThisFrame)
-                _frameCount++;
+            if (_capturedThisFrame && ++_frameCount == 1)
+                FirstFrameCaptured?.Invoke();
 
             UnityAudioSyncHook.WaitForAudio();
         }

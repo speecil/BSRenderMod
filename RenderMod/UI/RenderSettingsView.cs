@@ -162,7 +162,7 @@ namespace RenderMod.UI
         [UIAction("OnEncoderTestClicked")]
         private void OnEncoderTestClicked()
         {
-            encoderTestText.text = $"RESULT: {EncoderHelpers.SelectBestEncoder()} encoder";
+            encoderTestText.text = $"RESULT: {EncoderHelpers.PrepareEncoder()} encoder";
         }
 
         [UIValue("camera-options")] private List<object> cameraOptions = new List<object> { ReplayRenderSettings.SpecifiedCameraName };

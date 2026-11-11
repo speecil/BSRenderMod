@@ -16,6 +16,7 @@ namespace RenderMod.Render
         public static void StartRender(string leaderboard)
         {
             Log.Notice($"Starting render for {leaderboard} replay");
+            EncoderHelpers.PrepareEncoder();
             RenderRequested = true;
         }
 

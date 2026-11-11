@@ -22,11 +22,16 @@ namespace RenderMod.Render
 
         public void OpenFile(string path)
         {
-            _sampleRate = AudioSettings.outputSampleRate;
-            _peakDecay = 1f / _sampleRate;
             var stream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read);
-            _writer = new BinaryWriter(new BufferedStream(stream, 64 * 1024));
-            _writer.Write(new byte[HeaderSize]); // filled in on Close
+            var writer = new BinaryWriter(new BufferedStream(stream, 64 * 1024));
+            writer.Write(new byte[HeaderSize]);
+
+            lock (_lock)
+            {
+                _sampleRate = AudioSettings.outputSampleRate;
+                _peakDecay = 1f / _sampleRate;
+                _writer = writer;
+            }
         }
 
         private void Update()

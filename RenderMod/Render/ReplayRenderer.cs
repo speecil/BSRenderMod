@@ -20,7 +20,7 @@ namespace RenderMod.Render
 {
     // 1/fps timestep
     // UnityAudioSyncHook keeps the audio in sync
-    internal class ReplayRenderer : IAffinity, ILateTickable, ILateDisposable
+    internal class ReplayRenderer : IAffinity, IInitializable, ILateTickable, ILateDisposable
     {
 #if BS_1_29
         [Inject] private readonly IDifficultyBeatmap _difficultyBeatmap = null;
@@ -52,8 +52,24 @@ namespace RenderMod.Render
         private string _audioPath;
         private int _w, _h, _fps;
         private float _oldCaptureDeltaTime;
+        private bool _timeStepSet;
         private int _audioResyncCount;
         private bool _ready;
+
+        public void Initialize()
+        {
+            if (RenderManager.RenderRequested)
+                SetTimeStep();
+        }
+
+        private void SetTimeStep()
+        {
+            if (_timeStepSet)
+                return;
+            _oldCaptureDeltaTime = Time.captureDeltaTime;
+            Time.captureDeltaTime = 1f / Mathf.Max(1, ReplayRenderSettings.FPS);
+            _timeStepSet = true;
+        }
 
         [AffinityPatch(typeof(AudioTimeSyncController), nameof(AudioTimeSyncController.StartSong))]
         [AffinityPostfix]
@@ -93,11 +109,8 @@ namespace RenderMod.Render
             _frameBuffer = new byte[_w * _h * 3];
             _log.Notice($"FFmpeg started: {ffArgs}");
 
+            SetTimeStep();
             SetupCamera();
-
-            _oldCaptureDeltaTime = Time.captureDeltaTime;
-            Time.captureDeltaTime = 1f / _fps;
-
             SetupAudio();
             Application.quitting += LateDispose;
             _progressUI.Show();
@@ -127,6 +140,7 @@ namespace RenderMod.Render
 
             _cameraDriver = _camera.gameObject.AddComponent<ReplayCameraCaptureDriver>();
             _cameraDriver.FrameRendered += OnFrameRendered;
+            _cameraDriver.FirstFrameCaptured += StartAudio;
             _cameraDriver.Begin(_camera, _fps);
         }
 
@@ -155,6 +169,10 @@ namespace RenderMod.Render
             }
 
             _audioCapture = listener.gameObject.AddComponent<ReplayAudioCapture>();
+        }
+
+        private void StartAudio()
+        {
             _audioCapture.OpenFile(_audioPath);
 
             try
@@ -216,6 +234,12 @@ namespace RenderMod.Render
 
         public void LateDispose()
         {
+            if (_timeStepSet)
+            {
+                Time.captureDeltaTime = _oldCaptureDeltaTime;
+                _timeStepSet = false;
+            }
+
             if (!_ready)
             {
                 RenderManager.CancelRender();
@@ -231,7 +255,6 @@ namespace RenderMod.Render
             UnityAudioSyncHook.SetSyncTimes(false);
 
             AsyncGPUReadback.WaitAllRequests();
-            Time.captureDeltaTime = _oldCaptureDeltaTime;
             _pipe.Close();
 
             _log.Notice($"Captured {_audioCapture.CapturedSeconds:0.000}s of audio");
@@ -245,6 +268,7 @@ namespace RenderMod.Render
                 UnityEngine.Object.Destroy(_createdListener);
 
             _cameraDriver.FrameRendered -= OnFrameRendered;
+            _cameraDriver.FirstFrameCaptured -= StartAudio;
             if (_cameraDriver != null)
             {
                 _cameraDriver.End();
