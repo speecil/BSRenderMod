@@ -246,7 +246,7 @@ namespace RenderMod.Render
 
             if (!_ready)
             {
-                RenderManager.CancelRender();
+                RenderManager.FailRender();
                 return;
             }
             _ready = false;

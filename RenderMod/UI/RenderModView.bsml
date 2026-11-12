@@ -1,6 +1,6 @@
 <bg xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' xsi:schemaLocation='https://monkeymanboy.github.io/BSML-Docs/ https://monkeymanboy.github.io/BSML-Docs/BSMLSchema.xsd'>
 	<scrollable-settings-container preferred-height='90' child-control-height='true' child-expand-width='true'>
-		<toggle-setting apply-on-change="true" id='render-button' text='Enable Render?' value="renderEnabled" on-change='OnToggleChanged'/>
+		<toggle-setting apply-on-change="true" id='render-button' text='Manual Mode' hover-hint='Renders plays started with the Play button, and asks before rendering replays from leaderboards that have not integrated RenderMod.' value="renderEnabled" on-change='OnToggleChanged'/>
 		<button text='Open Settings' all-uppercase='true' preferred-width='30' preferred-height='20' on-click='OpenSettings'/>
 	</scrollable-settings-container>
 </bg>

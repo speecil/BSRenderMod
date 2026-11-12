@@ -1,6 +1,7 @@
 using HarmonyLib;
 using HMUI;
 using IPA.Utilities;
+using RenderMod.Api;
 using RenderMod.Render;
 using System;
 using System.Collections.Generic;
@@ -64,6 +65,11 @@ namespace RenderMod.Patches
                 return true;
 
             target.Instance = __instance;
+            if (RenderManager.RenderRequested && !string.Equals(RenderManager.Leaderboard, target.Name, StringComparison.OrdinalIgnoreCase))
+                RenderManager.CancelRender();
+            if (RenderModApi.IsRegistered(target.Name))
+                return true;
+
             if (!ReplayRenderSettings.RenderEnabled || target.PassThrough)
             {
                 target.PassThrough = false;

@@ -47,6 +47,34 @@ From there, you can:
 
   *(If that still doesn't work, check `syswow64` for `nvcuvid.dll`, `nvencodeapi64.dll` and `nvoptix.dll`, and if you find those there, move those to `system32`)*
 
+## Manual Mode
+
+The **Manual Mode** toggle in the Render Mod gameplay setup tab controls what gets rendered without a leaderboard asking for it:
+
+- **Play button:** any level started with Play is rendered. This is meant for map, lightshow and autoplay previews. Rendering runs the game at a fixed frame step, so it isnt playable in VR; use FPFC or an autoplay mod / built in F8. Make sure the play isnt just going to fail instantly basically, thats not on rendermod lol.
+- **Replay buttons:** for leaderboards that havent integrated with RenderMod, youre asked whether to render the replay before it starts.
+
+Leaderboards that have integrated with RenderMod are never touched. Their replay buttons just play the replay, even with Manual Mode on, and they should offer their own way to indicate a render.
+
+## Leaderboard integration
+
+### API (`RenderMod.Api.RenderModApi`)
+
+| Member | Description |
+|---|---|
+| `Register(string id)` | Stops RenderMods replay button prompt for this leaderboard. |
+| `Unregister(string id)` | Hands control back to Manual Mode. |
+| `IsRegistered(string id)` | Whether `id` is registered. |
+| `RequestRender(string id)` | Renders the next level that starts. Call it right before starting the replay. Returns `false` if another render is already pending or ffmpeg is missing. |
+| `CancelRequest()` | Clears a pending request, e.g. when the replay fails to start. |
+| `IsRenderRequested` | Whether a render is pending or in progress. |
+| `RenderFinished` | `event Action<string id, string path, bool success>`, raised on the main thread once the video is finished. `path` is `null` on failure. |
+| `Version` | API version, currently `1`. |
+
+RenderMods built in replay button support uses `BeatLeader`, `ScoreSaber` and `LocalLeaderboard`, so for the devs of these mods, register with that exact name to remove the prompt.
+
+A request expires if no level starts within 30 seconds. Clicking a different leaderboards replay button, or pressing Play with Manual Mode off, also clears it.
+
 ## Building
 
 The project builds for several game versions from one codebase. Pick the configuration matching

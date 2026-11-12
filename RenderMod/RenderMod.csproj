@@ -286,6 +286,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Api\RenderModApi.cs" />
     <Compile Include="Installers\AppInstaller.cs" />
     <Compile Include="Installers\MenuInstaller.cs" />
     <Compile Include="Installers\RenderInstaller.cs" />

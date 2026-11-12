@@ -1,12 +1,10 @@
 using BeatSaberMarkupLanguage.Attributes;
 using BeatSaberMarkupLanguage.GameplaySetup;
-using IPA.Utilities;
 using RenderMod.Render;
 using SiraUtil.Affinity;
 using System;
 using System.Linq;
 using UnityEngine;
-using UnityEngine.UI;
 using Zenject;
 
 namespace RenderMod.UI
@@ -14,13 +12,12 @@ namespace RenderMod.UI
     internal class UIPatch : IInitializable, IDisposable, IAffinity
     {
         [Inject] private readonly RenderSettingsFlow _renderSettingsFlow = null;
+        [Inject] private readonly GameScenesManager _gameScenesManager = null;
 #if BS_1_29
         private GameplaySetup _gameplaySetup => GameplaySetup.instance;
 #else
         [Inject] private readonly GameplaySetup _gameplaySetup = null;
 #endif
-
-        private Button _playButton;
 
         [UIValue("renderEnabled")] private bool renderEnabled = ReplayRenderSettings.RenderEnabled;
 
@@ -28,8 +25,6 @@ namespace RenderMod.UI
         private void OnToggleChanged(bool value)
         {
             ReplayRenderSettings.RenderEnabled = value;
-            if (_playButton != null)
-                _playButton.interactable = !value;
         }
 
         [UIAction("OpenSettings")]
@@ -48,13 +43,16 @@ namespace RenderMod.UI
             _gameplaySetup?.RemoveTab("Render Mod");
         }
 
-        [AffinityPatch(typeof(StandardLevelDetailView), "RefreshContent")]
+        [AffinityPatch(typeof(SinglePlayerLevelSelectionFlowCoordinator), "ActionButtonWasPressed")]
         [AffinityPostfix]
-        private void RefreshContentPostfix(StandardLevelDetailView __instance)
+        private void ActionButtonWasPressedPostfix()
         {
-            _playButton = __instance.GetField<Button, StandardLevelDetailView>("_actionButton");
-            if (_playButton != null)
-                _playButton.interactable = !ReplayRenderSettings.RenderEnabled;
+            if (!_gameScenesManager.isInTransition)
+                return;
+            if (ReplayRenderSettings.RenderEnabled)
+                RenderManager.StartRender(RenderManager.ManualId);
+            else
+                RenderManager.CancelRender();
         }
     }
 }

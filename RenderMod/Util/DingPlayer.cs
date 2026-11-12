@@ -1,4 +1,5 @@
 using BeatSaberMarkupLanguage;
+using RenderMod.Render;
 using SiraUtil.Logging;
 using System.Collections;
 using System.IO;
@@ -17,6 +18,7 @@ namespace RenderMod.Util
 
         private void Update()
         {
+            RenderManager.RaiseFinished();
             if (shouldPlayDing)
             {
                 shouldPlayDing = false;
