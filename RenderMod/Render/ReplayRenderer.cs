@@ -226,6 +226,8 @@ namespace RenderMod.Render
             UnityAudioSyncHook.UpdateGameTime();
             _progressUI.UpdateProgress(_atsc.songTime / Mathf.Max(0.0001f, _atsc.songLength));
 
+            DrainReadbacks(MaxReadbacksInFlight);
+            
             if (!_songEnded && _atsc.songTime + Mathf.Epsilon >= _atsc.songEndTime)
             {
                 _songEnded = true;
