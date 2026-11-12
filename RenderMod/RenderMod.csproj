@@ -292,6 +292,7 @@
     <Compile Include="Installers\RenderInstaller.cs" />
     <Compile Include="NativePatches\UnityAudioSyncHook.cs" />
     <Compile Include="Patches\AutoPauseStealthPatch.cs" />
+    <Compile Include="Patches\HitScorePatch.cs" />
     <Compile Include="Patches\ReplayButtonPatches.cs" />
     <Compile Include="Plugin.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

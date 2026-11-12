@@ -1,3 +1,4 @@
+using RenderMod.Patches;
 using RenderMod.Render;
 using SiraUtil.Tools.FPFC;
 using Zenject;
@@ -18,6 +19,9 @@ namespace RenderMod.Installers
 
             Container.BindInterfacesAndSelfTo<ReplayRenderer>().AsSingle().NonLazy();
             Container.Bind<ReplayProgressUI>().AsSingle();
+#if !BS_1_29
+            Container.BindInterfacesTo<HitScorePatch>().AsSingle();
+#endif
         }
     }
 }
